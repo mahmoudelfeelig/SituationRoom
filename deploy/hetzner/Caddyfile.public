@@ -1,0 +1,5 @@
+# BEGIN SituationRoom
+situationroom.elfeel.me {
+	reverse_proxy situationroom-web:8080
+}
+# END SituationRoom

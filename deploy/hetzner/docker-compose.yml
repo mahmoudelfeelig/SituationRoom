@@ -1,0 +1,28 @@
+name: situationroom
+
+services:
+  situationroom-web:
+    image: situationroom-web:${SITUATIONROOM_IMAGE_TAG:-local}
+    build:
+      context: ${SITUATIONROOM_RELEASE_DIR:-../..}
+      dockerfile: deploy/hetzner/Dockerfile
+    container_name: situationroom-web
+    restart: unless-stopped
+    expose:
+      - "8080"
+    networks:
+      - web
+    read_only: true
+    tmpfs:
+      - /config:rw,noexec,nosuid,nodev,size=16m,uid=10001,gid=10001,mode=0700
+      - /data:rw,noexec,nosuid,nodev,size=16m,uid=10001,gid=10001,mode=0700
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,uid=10001,gid=10001,mode=0700
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    stop_grace_period: 10s
+
+networks:
+  web:
+    external: true
