@@ -1,13 +1,18 @@
-# Hetzner deployment
+# Production release contract
 
-SituationRoom is served as an immutable static image on the shared external Docker network `web`. The shared `/opt/caddy` proxy remains the only service that publishes host ports 80 and 443.
+This public repository contains only reviewable application release inputs: artifact identifiers, the public hostname, and the app-local container contract used by CI. It contains no server address, login identity, deployment key, host filesystem layout, credentials, privileged origin-access procedure, or private controller topology.
 
-The production release root is `/opt/situationroom`. Each build is retained under `releases/<40-character-git-sha>`, while the stable Compose file selects the tested image through a server-only `.env` file. Only `dist/client` is served; the OpenAI Sites worker under `dist/server` is not part of the Hetzner runtime.
+GitHub Actions is the normal release path. `SituationRoom CI` runs the complete component and browser gates, creates the corresponding-source archive, embeds public `release.json` metadata, smoke-tests the exact content-addressed image, and publishes a checksummed short-lived artifact.
 
-The private Caddy container implements the Sites fallback contract: hashed assets are immutable, missing assets and API paths remain errors, and only GET or HEAD requests accepting HTML can fall back to the application shell. The public Caddy route is in `Caddyfile.public`.
+After that trusted `main` run succeeds, `.github/workflows/deploy-production.yml` acts only as a thin caller. It invokes the public reusable [Hetzner Release Gateway](https://github.com/mahmoudelfeelig/HetznerReleaseGateway) at an immutable reviewed commit and passes the application identifier, source commit, and successful CI run identity. The reusable workflow and private deployment controller independently revalidate provenance before any activation. Host credentials, topology, rollback implementation, and signed deployment receipts remain private and centralized.
 
-GitHub Actions is the normal release path. `SituationRoom CI` runs the complete component and browser gates, creates `dist/client/source/SituationRoom-source.tar.gz`, embeds `release.json`, validates both Caddy configurations, and smoke-tests the exact content-addressed image before publishing a checksummed artifact. `Deploy SituationRoom Production` accepts only that successful unsuperseded `main` SHA, loads the tested image, creates an immutable release directory, switches the stable Compose files, and runs internal plus public smoke checks. `deploy-release.sh` restores the previous Compose release if activation or any smoke check fails.
+The public application contract is independent of the private hosting layout:
 
-The production GitHub environment requires the `HETZNER_SSH_PRIVATE_KEY` secret and `HETZNER_HOST`, `HETZNER_SSH_PORT`, `HETZNER_USER`, `HETZNER_SSH_KNOWN_HOSTS`, and `SITUATIONROOM_EXTERNAL_SMOKE_URL` variables. SSH host verification remains strict. Routine releases do not restart the shared proxy or change Cloudflare DNS.
+- `https://situationroom.elfeel.me/` serves the application over valid HTTPS.
+- HTML routes, including copied deep links, return the application shell only for safe browser navigations.
+- Existing fingerprinted assets return the expected MIME type and immutable cache policy.
+- Missing assets, unsupported API paths, and unsupported methods remain errors and are not rewritten to HTML.
+- `https://situationroom.elfeel.me/release.json` exposes public release metadata suitable for matching a deployment to repository history without exposing infrastructure.
+- `https://situationroom.elfeel.me/source/SituationRoom-source.tar.gz` provides the corresponding source archive with download disposition.
 
-The Cloudflare record is a proxied `A` record named `situationroom` pointing to the Hetzner origin. Keep HTML on revalidation, cache only hashed `/assets/*` paths long-term, disable Rocket Loader for this hostname, and use Full (strict) TLS.
+Public verification may use ordinary HTTPS requests plus installed Chrome and Edge. It must not connect directly to an origin, override DNS, bypass the public TLS endpoint, inspect private services, or depend on host access. A release is accepted only after the public HTTP contract, browser UI, and browser WebMCP checks pass; failure leaves the previously accepted release authoritative.

@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "id": "situationroom",
+  "source": {
+    "repository": "mahmoudelfeelig/SituationRoom",
+    "default_branch": "main",
+    "required_workflows": ["SituationRoom CI"]
+  },
+  "registry": {
+    "host": "registry.elfeel.me",
+    "image_namespace": "apps/situationroom",
+    "release_repository": "releases/situationroom"
+  },
+  "release": {
+    "strategy": "artifact-images",
+    "artifact": {
+      "name": "situationroom-release-{sha}-{attempt}",
+      "archive": "situationroom-image.tar.gz",
+      "checksums": "SHA256SUMS"
+    },
+    "components": [
+      {
+        "name": "web",
+        "artifact_image": "situationroom-web:{sha}"
+      }
+    ]
+  }
+}

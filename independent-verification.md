@@ -2,24 +2,24 @@
 
 ## Verification scope
 
-This record covers the generalized Decision OS, its four domain packs, native import and recovery pipeline, typed decision kernel, routed agent-constructed room views, shared human-governance boundary, browser UI, real WebMCP gateway, and the pre-automation Hetzner/Cloudflare baseline.
+This record covers the generalized Decision OS, its four domain packs, native import and recovery pipeline, typed decision kernel, routed agent-constructed room views, shared human-governance boundary, browser UI, real WebMCP gateway, and public production behavior.
 
-Production deployment and the scoped Cloudflare DNS change were performed. No challenge submission or external message was sent.
+The public production endpoint was verified. This document deliberately records no host, credential, private-network, or origin-routing detail. No challenge submission or external message was sent.
 
 ## Fresh release evidence
 
 The complete release gate is available through the repository's aggregate command:
 
 ```text
-& "C:\Program Files\nodejs\npm.cmd" run test:all
+npm run test:all
 ```
 
 The named npm gates were executed directly and serially after the final relevant application corrections so every Vite and browser result remained attributable. Every component gate below passed; this record does not claim one aggregate-command exit code.
 
-| Browser project | Installed binary at audit | Configured coverage |
-| --- | --- | --- |
-| Google Chrome `151.0.7922.175` | `C:\Program Files\Google\Chrome\Application\chrome.exe` | Every black-box UI and real WebMCP specification |
-| Microsoft Edge `152.0.4191.53` | `C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe` | Every black-box UI and real WebMCP specification |
+| Browser project | Configured coverage |
+| --- | --- |
+| Installed Google Chrome | Every black-box UI and real WebMCP specification |
+| Installed Microsoft Edge | Every black-box UI and real WebMCP specification |
 
 | Gate | Final post-correction result |
 | --- | --- |
@@ -36,37 +36,33 @@ The successful direct runs establish the component coverage without representing
 
 ## GitHub pre-release checkpoint
 
-The first `main` push created `SituationRoom CI` run `33259196449` for commit `3291d0101488ed39a974f4358005eec668fc3f83`. The repository job passed actionlint and POSIX shell validation. The Windows browser job passed OCR, browser-kernel, presentation, all 60 Chrome/Edge UI checks, and all 14 Chrome/Edge WebMCP checks.
+An early trusted `main` run passed actionlint, POSIX shell validation, OCR, browser-kernel, presentation, all 60 Chrome/Edge UI checks, and all 14 Chrome/Edge WebMCP checks.
 
 The quality job failed closed because the clean Ubuntu runner executed the generated Sites-artifact assertion before running the production build. The release job was skipped, so the deployment workflow did not mutate production. CI was corrected to build before `test:sites`, and the workflow contract now asserts that ordering. This paragraph is a timestamped pre-release checkpoint; the current release state is established by the latest successful Actions run and the public `/release.json`, not by assuming a pending run succeeded.
+
+The repository now exposes only a thin production caller. After a successful trusted `main` run, it invokes the public reusable [Hetzner Release Gateway](https://github.com/mahmoudelfeelig/HetznerReleaseGateway) at an immutable reviewed commit and passes application identity plus CI provenance. Deployment credentials, topology, activation policy, rollback implementation, and receipt signing are centralized outside this repository. Reviewers verify the result through the public release metadata, HTTPS behavior, browsers, and corresponding-source download described below.
 
 ## Actual Codex connection status
 
 The automated WebMCP suite uses the real top-level browser API in installed Chrome and Edge, but it selects and executes tool names directly. As of this checkpoint, no Codex model had independently discovered and selected SituationRoom Site tools from a natural-language request, and no **Recently used > Sources** capture had been recorded. That separate acceptance gate is defined in [`docs/CODEX_SITE_TOOLS_ACCEPTANCE.md`](docs/CODEX_SITE_TOOLS_ACCEPTANCE.md).
 
-## Pre-automation production baseline
+## Public production verification
 
-The production facts below capture the release that existed before GitHub-driven deployment was enabled. They are historical baseline evidence rather than a claim about the current release pointer.
+The production release is available at `https://situationroom.elfeel.me`. Verification is intentionally limited to the same public surfaces available to a reviewer; it does not require privileged host access, direct-origin requests, DNS overrides, or knowledge of the private deployment topology.
 
-The production release is available at `https://situationroom.elfeel.me`.
-
-| Production property | Verified result |
+| Public property | Verified result |
 | --- | --- |
-| Release archive | SHA-256 `afe6aa4f5f30d1df30a7b09a9a6537a96bec5cce7135f236bd444814648cdc17` |
-| Hetzner workload | Image `situationroom-web:afe6aa4f5f30d1df`; healthy; user `10001:10001`; read-only root; all Linux capabilities dropped; no host port bindings |
-| Network path | Private `web` Docker network to the shared Caddy reverse proxy |
-| Cloudflare | Proxied A record for `situationroom.elfeel.me` targeting `65.21.109.224` |
-| TLS | Public HTTPS validated through Cloudflare; Caddy obtained a production Let's Encrypt origin certificate |
+| TLS | The public hostname completed normal HTTPS certificate validation |
+| Release metadata | `/release.json` was reachable for comparison with repository history |
 | Live UI | Passed: 48/48 checks against the public hostname in installed Chrome and Edge |
 | Live WebMCP | Passed: 12/12 real browser checks against the public hostname in installed Chrome and Edge |
 | Live OCR/browser kernel | Passed: OCR worker, WASM loader, versioned English model, extracted text, and durable IndexedDB mode |
-| Public HTTP contract | Root and HTML deep link 200; missing asset 404 `no-store`; API and POST requests 404; JavaScript/CSS and OCR assets 200 with correct MIME and immutable caching |
-| Corresponding source | Downloadable `/source/SituationRoom-source.tar.gz` with attachment disposition |
-| Neighbor regression | `https://systemforge.elfeel.me/` remained 200 after the shared route update |
+| Public HTTP contract | Root and an HTML deep link returned 200; a missing asset returned 404 with `no-store`; API and unsupported-method requests returned errors; JavaScript, CSS, and OCR assets returned the correct MIME type and immutable caching |
+| Corresponding source | `/source/SituationRoom-source.tar.gz` was downloadable with attachment disposition |
 
-HTML uses `public, no-cache, must-revalidate, no-transform`, preventing Cloudflare Web Analytics from rewriting the application payload. The Tesseract model is emitted at the versioned path `/assets/ocr/4.0.0_best_int/eng.traineddata.gz`. Existing assets are immutable; missing assets and missing source paths are explicitly `no-store`, preventing negative-cache poisoning.
+HTML uses `public, no-cache, must-revalidate, no-transform`. Existing fingerprinted assets are immutable; missing assets and missing source paths are explicitly `no-store`, preventing negative-cache poisoning.
 
-The shared-Caddy bind-mount maintenance was completed on 2026-08-29 after explicit approval. Only the Caddy service was recreated; its persistent certificate/config volumes and external web network were preserved. The replacement container (`96cab396d6030767ac02ca839d079e973a5389484ca0ffbb56569bfa69336b36`) is running, the host and in-container Caddyfiles both hash to `95169476ab2c5a3dfe1194b3b19ea12012cc9d2a6d6091289587197336d3f8c1`, and the mounted configuration validates from inside the container. Caddy loaded all ten configured domains. Post-recreation public probes returned 200 for SituationRoom, SystemForge, and the other site roots; the API-only hostname remained reachable and returned its application-level 404 at `/` rather than a proxy or TLS failure.
+An independent reviewer can repeat the public checks with a standard HTTPS client and installed Chrome or Edge: validate the root and a copied deep link, confirm the missing-resource and unsupported-method behavior, inspect `/release.json`, download the corresponding-source archive, exercise the primary UI workflow, and run WebMCP checks only when the browser exposes the required feature. No origin-bypass procedure is part of the acceptance evidence.
 
 ## What the browser evidence establishes
 

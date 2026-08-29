@@ -48,7 +48,7 @@ jobs:
           sha256sum situationroom-site.tar.gz > situationroom-site.tar.gz.sha256
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: situationroom-site-${{ github.sha }}
+          name: situationroom-site-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/situationroom-site/
           if-no-files-found: error
           retention-days: 2
@@ -59,7 +59,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-      - name: Lint workflows and deployment shell
+      - name: Lint workflows
         env:
           ACTIONLINT_VERSION: 1.7.12
           ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
@@ -73,7 +73,6 @@ jobs:
           test "${actual_sha%% *}" = "$ACTIONLINT_SHA256"
           tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/actionlint"
           "$RUNNER_TEMP/actionlint/actionlint" .github/workflows/*.yml
-          sh -n deploy/hetzner/deploy-release.sh
 
   browser:
     runs-on: windows-latest
@@ -93,7 +92,7 @@ jobs:
       - if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: browser-evidence-${{ github.sha }}
+          name: browser-evidence-${{ github.sha }}-${{ github.run_attempt }}
           path: |
             test-artifacts/
             test-results/
@@ -111,7 +110,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
-          name: situationroom-site-${{ github.sha }}
+          name: situationroom-site-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/situationroom-site
       - name: Verify and restore the exact tested site build
         shell: bash
@@ -156,22 +155,14 @@ jobs:
             echo "A missing immutable asset unexpectedly resolved." >&2
             exit 1
           fi
-      - name: Package the tested image and immutable release files
+      - name: Package the tested immutable image artifact
         shell: bash
         run: |
           install -d "$RUNNER_TEMP/situationroom-release"
           docker save "situationroom-web:$GITHUB_SHA" \
             | gzip -1 > "$RUNNER_TEMP/situationroom-release/situationroom-image.tar.gz"
-          tar -czf "$RUNNER_TEMP/situationroom-release/situationroom-files.tar.gz" \
-            dist/client deploy/hetzner
-          cp deploy/hetzner/deploy-release.sh \
-            "$RUNNER_TEMP/situationroom-release/deploy-release.sh"
           cd "$RUNNER_TEMP/situationroom-release" || exit 1
-          sha256sum \
-            situationroom-image.tar.gz \
-            situationroom-files.tar.gz \
-            deploy-release.sh \
-            > SHA256SUMS
+          sha256sum situationroom-image.tar.gz > SHA256SUMS
       - if: always()
         name: Collect release-container diagnostics
         shell: bash
@@ -184,7 +175,7 @@ jobs:
           docker network rm web || true
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: situationroom-release-${{ github.sha }}
+          name: situationroom-release-${{ github.sha }}-${{ github.run_attempt }}
           path: ${{ runner.temp }}/situationroom-release/
           if-no-files-found: error
           retention-days: 2

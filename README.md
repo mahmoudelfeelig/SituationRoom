@@ -81,9 +81,11 @@ The native-browser matrix does not substitute for a Codex model choosing Site to
 
 ## Continuous delivery
 
-`SituationRoom CI` runs deterministic, hosting, OCR, browser-kernel, presentation, routed UI, and real WebMCP checks. It builds one static payload, embeds the exact commit and corresponding-source archive, smoke-tests the resulting Caddy image, and publishes a checksummed short-lived release artifact.
+`SituationRoom CI` runs deterministic, hosting, OCR, browser-kernel, presentation, routed UI, and real WebMCP checks. It builds one static payload, embeds the corresponding-source archive and public release metadata, smoke-tests the exact image, and publishes a checksummed short-lived release artifact.
 
-After a successful trusted `main` push, `Deploy SituationRoom Production` downloads that exact artifact, revalidates the current branch SHA, transfers it with strict SSH host verification, and activates it on Hetzner through the versioned `/opt/situationroom` release layout. Internal and public route, release, and missing-asset checks must pass or the previous Compose release is restored. Routine application deploys do not mutate Cloudflare or the shared Caddy route.
+After a successful trusted `main` push, the repository's thin deployment caller invokes the public reusable [Hetzner Release Gateway](https://github.com/mahmoudelfeelig/HetznerReleaseGateway) at an immutable reviewed commit. The caller supplies only the application identifier and trusted CI provenance; credentials, host topology, activation policy, rollback, and receipt signing remain outside this public repository. A release is accepted only when the gateway and private deployment controller validate the same unsuperseded commit and CI run.
+
+Production verification uses only public surfaces: HTTPS and certificate validation, root and deep-link responses, missing-asset and unsupported-method behavior, browser checks in Chrome and Edge, WebMCP discovery where the feature is available, `/release.json`, and the downloadable corresponding-source archive. See [`deploy/hetzner/README.md`](deploy/hetzner/README.md) for the public verification contract.
 
 Ten model-facing task definitions, including prompt injection, stale revisions, frozen state, regulated candidate and health-plan policies, scenario analysis, and draft-only external actions, live in [`tests/fixtures/webmcp/evals.json`](tests/fixtures/webmcp/evals.json). They are kept separate from deterministic tests so model-selection results are never presented as measured unless a model runner actually executes them.
 
