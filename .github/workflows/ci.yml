@@ -20,12 +20,15 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run test:unit
+      - run: npm run build
       - run: npm run test:sites
       - run: npm audit --omit=dev --audit-level=high
-      - name: Build the site and corresponding source archive
+      - name: Attach the corresponding source archive and release identity
         shell: bash
         run: |
-          npm run build
+          test -s dist/client/index.html
+          test -s dist/server/index.js
+          test -s dist/.openai/hosting.json
           install -d dist/client/source
           git archive \
             --format=tar.gz \
@@ -139,15 +142,15 @@ jobs:
             -d --no-build --wait --wait-timeout 120
           docker exec situationroom-web \
             wget --quiet --output-document=- http://127.0.0.1:8080/ \
-            | grep -Fq "SituationRoom"
+            | grep -F "SituationRoom" >/dev/null
           docker exec situationroom-web \
             wget --quiet --output-document=- \
               --header='Accept: text/html' \
               http://127.0.0.1:8080/cases/procurement-demo/analyze/investigate \
-            | grep -Fq "SituationRoom"
+            | grep -F "SituationRoom" >/dev/null
           docker exec situationroom-web \
             wget --quiet --output-document=- http://127.0.0.1:8080/release.json \
-            | grep -Fq "\"sha\":\"$GITHUB_SHA\""
+            | grep -F "\"sha\":\"$GITHUB_SHA\"" >/dev/null
           if docker exec situationroom-web \
             wget --quiet --spider "http://127.0.0.1:8080/assets/missing-$GITHUB_SHA.js"; then
             echo "A missing immutable asset unexpectedly resolved." >&2

@@ -2,7 +2,7 @@
 
 SituationRoom is served as an immutable static image on the shared external Docker network `web`. The shared `/opt/caddy` proxy remains the only service that publishes host ports 80 and 443.
 
-The production release root is `/opt/situationroom`. Each build is retained under `releases/<sha256>`, while the stable Compose file selects the tested image through a server-only `.env` file. Only `dist/client` is served; the OpenAI Sites worker under `dist/server` is not part of the Hetzner runtime.
+The production release root is `/opt/situationroom`. Each build is retained under `releases/<40-character-git-sha>`, while the stable Compose file selects the tested image through a server-only `.env` file. Only `dist/client` is served; the OpenAI Sites worker under `dist/server` is not part of the Hetzner runtime.
 
 The private Caddy container implements the Sites fallback contract: hashed assets are immutable, missing assets and API paths remain errors, and only GET or HEAD requests accepting HTML can fall back to the application shell. The public Caddy route is in `Caddyfile.public`.
 

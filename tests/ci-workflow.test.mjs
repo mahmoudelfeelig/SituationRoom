@@ -11,12 +11,14 @@ test("CI creates a tested immutable release before deployment", async () => {
   assert.equal(workflow.name, "SituationRoom CI");
   assert.deepEqual(workflow.permissions, { contents: "read" });
   assert.deepEqual(workflow.jobs.release.needs, ["quality", "repository", "browser"]);
+  assert.ok(source.indexOf("npm run build") < source.indexOf("npm run test:sites"));
   assert.match(source, /git archive/);
   assert.match(source, /situationroom-site\.tar\.gz\.sha256/);
   assert.match(source, /docker compose[^\n]+build --pull/);
   assert.match(source, /docker compose[^\n]+up[\s\\\n]+-d --no-build --wait/);
   assert.match(source, /docker save/);
   assert.match(source, /situationroom-release-\$\{\{ github\.sha \}\}/);
+  assert.doesNotMatch(source, /\|\s*grep -Fq/);
 });
 
 test("production deploy is bound to successful main CI and strict SSH", async () => {

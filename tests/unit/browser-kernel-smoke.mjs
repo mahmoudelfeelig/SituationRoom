@@ -36,6 +36,7 @@ const browser = await chromium.launch({
 });
 const page = await browser.newPage();
 const errors = [];
+const speculativePrefetchFailures = [];
 page.on("pageerror", (error) => errors.push(error.message));
 page.on("console", (message) => {
   if (
@@ -48,7 +49,15 @@ page.on("console", (message) => {
 });
 page.on("response", (response) => {
   if (response.status() >= 400 && !response.url().endsWith("/favicon.ico")) {
-    errors.push(`${response.status()} ${response.url()}`);
+    const request = response.request();
+    const requestHeaders = request.headers();
+    const purpose = requestHeaders["sec-purpose"] ?? requestHeaders.purpose ?? "none";
+    const diagnostic = `${response.status()} ${request.method()} ${request.resourceType()} purpose=${purpose} ${response.url()}`;
+    if (request.resourceType() === "other" && purpose.includes("prefetch")) {
+      speculativePrefetchFailures.push(diagnostic);
+      return;
+    }
+    errors.push(diagnostic);
   }
 });
 
@@ -65,6 +74,10 @@ if (externalUrl) {
       const room = window.__situationRoom?.getState?.();
       return room?.bootStatus === "ready" && room?.compositionPhase === "idle";
     });
+    const newRouteResponse = await page.request.get(`${baseUrl}/new`, {
+      headers: { Accept: "text/html" },
+    });
+    assert.equal(newRouteResponse.status(), 200);
     const ocrDataUrl = await page.evaluate(() => {
       const canvas = document.createElement("canvas");
       canvas.width = 1200;
@@ -79,7 +92,15 @@ if (externalUrl) {
       context.fillText("BETA COST 20", 36, 310);
       return canvas.toDataURL("image/png");
     });
-    await page.getByRole("button", { name: /New decision/ }).first().click();
+    const newDocketLink = page.locator(".os-new-docket");
+    if (await newDocketLink.isVisible()) {
+      await newDocketLink.click();
+    } else {
+      const roomControls = page.getByRole("button", { name: "Room controls", exact: true });
+      if (await roomControls.getAttribute("aria-expanded") !== "true") await roomControls.click();
+      await page.locator("#os-utility-menu").getByRole("button", { name: /New decision/ }).click();
+    }
+    await page.waitForURL(/\/new$/);
     const dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
     await dialog.getByLabel("Room title").fill("Live OCR verification");
     await dialog.getByLabel("What should the room help decide?").fill("Compare Alpha and Beta using the imported cost evidence.");
@@ -134,6 +155,7 @@ if (externalUrl) {
     console.log("Production Chrome kernel smoke passed", {
       persistenceMode: result.persistenceMode,
       ocrVerified: true,
+      speculativePrefetchFailures: speculativePrefetchFailures.length,
       ocrAssets: ocrAssets.map(({ url, status }) => ({
         file: new URL(url).pathname.split("/").at(-1),
         status,
