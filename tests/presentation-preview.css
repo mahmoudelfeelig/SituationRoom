@@ -1,0 +1,44 @@
+:root {
+  font-family: "IBM Plex Sans Condensed", "Arial Narrow", sans-serif;
+  color: #1d211f;
+  background: #d8d1c0;
+  --paper: #f3eedf;
+  --paper-deep: #e9e0cb;
+  --paper-light: #faf7ec;
+  --ink: #1d211f;
+  --muted: #5e625b;
+  --rule: #a9a28f;
+  --rule-light: #cbc4b1;
+  --oxblood: #9b1f24;
+  --oxblood-dark: #721419;
+  --pine: #236343;
+  --amber: #a56308;
+  --focus: #16689a;
+  --serif: "Libre Baskerville", Georgia, serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; background: var(--paper); }
+button { font: inherit; }
+.presentation-preview { min-height: 100vh; }
+.preview-header { display: flex; align-items: stretch; justify-content: space-between; min-height: 64px; border-bottom: 1px solid var(--rule); background: var(--paper); }
+.preview-header > div { display: flex; justify-content: center; flex-direction: column; gap: 2px; padding: 10px 18px; }
+.preview-header > div strong { font-family: var(--serif); font-size: 1.3rem; }
+.preview-header > div strong span { color: var(--oxblood); }
+.preview-header small { color: var(--muted); font-family: var(--mono); font-size: 0.55rem; text-transform: uppercase; }
+.preview-header nav { display: flex; overflow-x: auto; }
+.preview-header button { min-height: 48px; padding: 0 14px; border: 0; border-left: 1px solid var(--rule-light); background: transparent; text-transform: capitalize; cursor: pointer; }
+.preview-header button[aria-current="page"] { color: var(--oxblood); box-shadow: inset 0 -4px 0 var(--oxblood); }
+.preview-contract { display: grid; grid-template-columns: auto 1fr auto; gap: 16px; padding: 10px 18px; border-bottom: 1px solid var(--rule); background: var(--paper-deep); font-family: var(--mono); font-size: 0.62rem; }
+.preview-contract strong { font-family: var(--serif); font-size: 0.9rem; text-align: center; }
+.preview-stage { padding: 18px; }
+.preview-action-receipt { display: block; min-height: 38px; padding: 10px 18px; border-top: 1px solid var(--rule); color: var(--muted); font-family: var(--mono); font-size: 0.58rem; overflow-wrap: anywhere; }
+@media (max-width: 760px) {
+  .preview-header { align-items: stretch; flex-direction: column; }
+  .preview-header nav button { flex: 1; min-width: 94px; }
+  .preview-contract { grid-template-columns: 1fr; gap: 3px; }
+  .preview-contract strong { text-align: left; }
+  .preview-stage { padding: 12px; }
+}
+
