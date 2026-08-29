@@ -1,0 +1,188 @@
+name: SituationRoom CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run test:sites
+      - run: npm audit --omit=dev --audit-level=high
+      - name: Build the site and corresponding source archive
+        shell: bash
+        run: |
+          npm run build
+          install -d dist/client/source
+          git archive \
+            --format=tar.gz \
+            --prefix="SituationRoom-$GITHUB_SHA/" \
+            --output=dist/client/source/SituationRoom-source.tar.gz \
+            "$GITHUB_SHA"
+          printf '{"sha":"%s","repository":"%s"}\n' \
+            "$GITHUB_SHA" \
+            "$GITHUB_REPOSITORY" \
+            > dist/client/release.json
+      - name: Package the exact static build
+        shell: bash
+        run: |
+          install -d "$RUNNER_TEMP/situationroom-site"
+          tar -czf "$RUNNER_TEMP/situationroom-site/situationroom-site.tar.gz" dist/client
+          cd "$RUNNER_TEMP/situationroom-site" || exit 1
+          sha256sum situationroom-site.tar.gz > situationroom-site.tar.gz.sha256
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: situationroom-site-${{ github.sha }}
+          path: ${{ runner.temp }}/situationroom-site/
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
+
+  repository:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - name: Lint workflows and deployment shell
+        env:
+          ACTIONLINT_VERSION: 1.7.12
+          ACTIONLINT_SHA256: 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8
+        shell: bash
+        run: |
+          install -d "$RUNNER_TEMP/actionlint"
+          curl --fail --location --silent --show-error \
+            --output "$RUNNER_TEMP/actionlint.tar.gz" \
+            "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          actual_sha=$(sha256sum "$RUNNER_TEMP/actionlint.tar.gz")
+          test "${actual_sha%% *}" = "$ACTIONLINT_SHA256"
+          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP/actionlint"
+          "$RUNNER_TEMP/actionlint/actionlint" .github/workflows/*.yml
+          sh -n deploy/hetzner/deploy-release.sh
+
+  browser:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+      - run: npm run test:ocr
+      - run: npm run test:kernel:browser
+      - run: npm run test:presentation
+      - run: npm run test:ui
+      - run: npm run test:webmcp
+      - if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: browser-evidence-${{ github.sha }}
+          path: |
+            test-artifacts/
+            test-results/
+          if-no-files-found: warn
+          retention-days: 7
+
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [quality, repository, browser]
+    env:
+      SITUATIONROOM_IMAGE_TAG: ${{ github.sha }}
+      SITUATIONROOM_RELEASE_DIR: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: situationroom-site-${{ github.sha }}
+          path: ${{ runner.temp }}/situationroom-site
+      - name: Verify and restore the exact tested site build
+        shell: bash
+        run: |
+          cd "$RUNNER_TEMP/situationroom-site" || exit 1
+          sha256sum --check situationroom-site.tar.gz.sha256
+          tar -xzf situationroom-site.tar.gz -C "$GITHUB_WORKSPACE"
+          grep -Fq "\"sha\":\"$GITHUB_SHA\"" "$GITHUB_WORKSPACE/dist/client/release.json"
+          test -s "$GITHUB_WORKSPACE/dist/client/source/SituationRoom-source.tar.gz"
+      - name: Validate the private and public Caddy contracts
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$PWD/deploy/hetzner/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            caddy:2.9-alpine \
+            caddy validate --config /etc/caddy/Caddyfile
+          docker run --rm \
+            -v "$PWD/deploy/hetzner/Caddyfile.public:/etc/caddy/Caddyfile:ro" \
+            caddy:2.9-alpine \
+            caddy validate --config /etc/caddy/Caddyfile
+      - name: Build and smoke-test the release image
+        shell: bash
+        run: |
+          docker network create web
+          docker compose -f deploy/hetzner/docker-compose.yml config --quiet
+          docker compose -f deploy/hetzner/docker-compose.yml build --pull
+          docker compose -f deploy/hetzner/docker-compose.yml up \
+            -d --no-build --wait --wait-timeout 120
+          docker exec situationroom-web \
+            wget --quiet --output-document=- http://127.0.0.1:8080/ \
+            | grep -Fq "SituationRoom"
+          docker exec situationroom-web \
+            wget --quiet --output-document=- \
+              --header='Accept: text/html' \
+              http://127.0.0.1:8080/cases/procurement-demo/analyze/investigate \
+            | grep -Fq "SituationRoom"
+          docker exec situationroom-web \
+            wget --quiet --output-document=- http://127.0.0.1:8080/release.json \
+            | grep -Fq "\"sha\":\"$GITHUB_SHA\""
+          if docker exec situationroom-web \
+            wget --quiet --spider "http://127.0.0.1:8080/assets/missing-$GITHUB_SHA.js"; then
+            echo "A missing immutable asset unexpectedly resolved." >&2
+            exit 1
+          fi
+      - name: Package the tested image and immutable release files
+        shell: bash
+        run: |
+          install -d "$RUNNER_TEMP/situationroom-release"
+          docker save "situationroom-web:$GITHUB_SHA" \
+            | gzip -1 > "$RUNNER_TEMP/situationroom-release/situationroom-image.tar.gz"
+          tar -czf "$RUNNER_TEMP/situationroom-release/situationroom-files.tar.gz" \
+            dist/client deploy/hetzner
+          cp deploy/hetzner/deploy-release.sh \
+            "$RUNNER_TEMP/situationroom-release/deploy-release.sh"
+          cd "$RUNNER_TEMP/situationroom-release" || exit 1
+          sha256sum \
+            situationroom-image.tar.gz \
+            situationroom-files.tar.gz \
+            deploy-release.sh \
+            > SHA256SUMS
+      - if: always()
+        name: Collect release-container diagnostics
+        shell: bash
+        run: docker compose -f deploy/hetzner/docker-compose.yml logs --no-color || true
+      - if: always()
+        name: Remove the release-container test stack
+        shell: bash
+        run: |
+          docker compose -f deploy/hetzner/docker-compose.yml down || true
+          docker network rm web || true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: situationroom-release-${{ github.sha }}
+          path: ${{ runner.temp }}/situationroom-release/
+          if-no-files-found: error
+          retention-days: 2
+          compression-level: 0
