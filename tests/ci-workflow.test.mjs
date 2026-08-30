@@ -35,7 +35,7 @@ test("production release delegates to the immutable shared gateway", async () =>
   assert.match(source, /head_repository\.full_name == github\.repository/);
   assert.equal(
     workflow.jobs.release.uses,
-    "mahmoudelfeelig/HetznerReleaseGateway/.github/workflows/release.yml@c6079616813545bb0c0da1f649e04de6d89dc366",
+    "mahmoudelfeelig/HetznerReleaseGateway/.github/workflows/release.yml@1d0be0bb3b6ac26ce749e382081d320855d5bcba",
   );
   assert.deepEqual(workflow.jobs.release.with, {
     app: "situationroom",
