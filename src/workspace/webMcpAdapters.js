@@ -1872,6 +1872,35 @@ export function createImportWebMcpAdapter({
       };
     },
 
+    ...(typeof importCoordinator.stageSemanticSuggestions === "function" ? {
+      async proposeSemanticMapping(jobId, suggestions, options = {}) {
+        const job = await assertImportVersion(jobId, options.expectedImportVersion);
+        const scope = await transientDocuments(job.caseId, job.id);
+        const knownFragments = new Set(scope.documents.flatMap((document) =>
+          (document.blocks ?? []).map((block) => `${document.id}\u0000${block.id}`),
+        ));
+        for (const suggestion of suggestions) {
+          for (const reference of suggestion.sourceRefs ?? []) {
+            if (!knownFragments.has(`${reference.documentId}\u0000${reference.fragmentId}`)) {
+              throw sourceScopeError("A semantic suggestion cites a fragment outside the authorized import job.");
+            }
+          }
+        }
+        const updated = await importCoordinator.stageSemanticSuggestions(jobId, suggestions, {
+          expectedImportVersion: options.expectedImportVersion,
+        });
+        return {
+          ok: true,
+          jobId,
+          caseId: updated.caseId,
+          importVersion: updated.version,
+          suggestionCount: suggestions.length,
+          awaitingHuman: true,
+          announcement: `${suggestions.length} semantic ${suggestions.length === 1 ? "suggestion is" : "suggestions are"} visible for human review.`,
+        };
+      },
+    } : {}),
+
     async retryImport(jobId, options = {}) {
       await assertImportVersion(jobId, options.expectedImportVersion);
       try {
