@@ -14,7 +14,29 @@ import {
 import { canonicalHash } from "../src/kernel/canonicalize.js";
 import { ANALYSIS_SCHEMAS, IMPORT_SCHEMAS, buildPresentationSchemas } from "../src/webmcp/schemas.js";
 import { createToolCatalog } from "../src/webmcp/toolCatalog.js";
+import { evaluateCapability } from "../src/webmcp/capabilityPolicy.js";
 import { validateInput } from "../src/webmcp/runtimeValidation.js";
+
+test("semantic intake assistance never bypasses a human authority checkpoint", () => {
+  const spec = {
+    name: "propose_semantic_mapping",
+    phases: ["import_review"],
+    mutating: true,
+    allowedWithHumanCheckpoint: true,
+  };
+  const importReview = {
+    phase: "import_review",
+    permissions: ["*"],
+    pendingHumanCheckpoint: true,
+    pendingHumanAuthorityCheckpoint: false,
+    frozen: false,
+  };
+  assert.equal(evaluateCapability(spec, importReview, {}).allowed, true);
+  assert.deepEqual(
+    evaluateCapability(spec, { ...importReview, pendingHumanAuthorityCheckpoint: true }, {}),
+    { allowed: false, reason: "human_checkpoint_pending" },
+  );
+});
 
 class FakeModelContext {
   constructor() {
@@ -357,6 +379,25 @@ test("gracefully reports an unavailable browser API", async () => {
   assert.equal(result.available, false);
   assert.equal(result.reason, "webmcp-unavailable");
   assert.equal(statuses.at(-1).toolCount, 0);
+});
+
+test("emits privacy-bounded started and settled activity for actual model-context calls", async (t) => {
+  const { ports } = createHarness();
+  const modelContext = new FakeModelContext();
+  const activity = [];
+  const gateway = createWebMcpGateway({ ports, modelContext, onActivity: (event) => activity.push(event) });
+  t.after(() => gateway.stop());
+  await gateway.start();
+
+  const result = await modelContext.execute("get_workspace_state", {});
+  assert.equal(result.ok, true);
+  assert.equal(activity.length, 2);
+  assert.deepEqual(activity.map((event) => event.phase), ["started", "settled"]);
+  assert.equal(activity[0].id, activity[1].id);
+  assert.equal(activity[0].tool, "get_workspace_state");
+  assert.deepEqual(activity[0].argumentKeys, []);
+  assert.equal("input" in activity[0], false);
+  assert.equal(activity[1].receipt.status, "completed");
 });
 
 test("registers a compact state-aware tool set with no prohibited authority", async (t) => {

@@ -104,6 +104,42 @@ function gatewayOwnerId() {
   return globalThis.crypto?.randomUUID?.() ?? `gateway-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
 
+function activityCallId() {
+  return globalThis.crypto?.randomUUID?.() ?? `agent-call-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function activityReceipt(receipt) {
+  if (!receipt || typeof receipt !== "object") return null;
+  return {
+    id: receipt.id ?? receipt.operationId ?? null,
+    operationId: receipt.operationId ?? receipt.id ?? null,
+    status: receipt.status ?? null,
+    errorCode: receipt.errorCode ?? null,
+    revisionBefore: receipt.revisionBefore ?? null,
+    revisionAfter: receipt.revisionAfter ?? null,
+    viewRevisionBefore: receipt.viewRevisionBefore ?? null,
+    viewRevisionAfter: receipt.viewRevisionAfter ?? null,
+    decisionHashBefore: receipt.decisionHashBefore ?? null,
+    decisionHashAfter: receipt.decisionHashAfter ?? null,
+    changedEntityIds: Array.isArray(receipt.changedEntityIds) ? receipt.changedEntityIds.slice(0, 20) : [],
+    replayed: Boolean(receipt.replayed),
+  };
+}
+
+function activityInputProjection(input) {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return { argumentKeys: [], safeArguments: {} };
+  const argumentKeys = Object.keys(input)
+    .filter((key) => /^[A-Za-z][A-Za-z0-9]{0,79}$/.test(key))
+    .slice(0, 40);
+  const safeArguments = {};
+  for (const key of ["lens", "layoutId", "targetStatus", "recipeVersion", "expectedDecisionRevision", "expectedViewRevision", "expectedImportVersion"]) {
+    const value = input[key];
+    if (typeof value === "string" && /^[A-Za-z0-9._:-]{1,120}$/.test(value)) safeArguments[key] = value;
+    else if (Number.isInteger(value) && value >= 0) safeArguments[key] = value;
+  }
+  return { argumentKeys, safeArguments };
+}
+
 function journalMeta(invocation, receipt, options = {}) {
   const invocationDurability = compactJournalDurability(invocation);
   const receiptDurability = compactJournalDurability(receipt);
@@ -187,6 +223,7 @@ export class WebMcpGateway {
     actor = defaultActor(),
     onStatus,
     onReceipt,
+    onActivity,
     outputLimit = DEFAULT_OUTPUT_LIMIT,
     receiptLedger,
     invocationStore,
@@ -196,6 +233,7 @@ export class WebMcpGateway {
     this.actor = actor;
     this.onStatus = onStatus;
     this.onReceipt = onReceipt;
+    this.onActivity = onActivity;
     this.outputLimit = Math.max(700, Math.min(4_000, outputLimit));
     this.receipts = receiptLedger ?? new ReceiptLedger();
     this.invocations = invocationStore ?? new MemoryInvocationStore();
@@ -411,6 +449,18 @@ export class WebMcpGateway {
     record.inFlight += 1;
     let invocation = null;
     let executionSpec = record.spec;
+    const activityId = activityCallId();
+    const inputProjection = activityInputProjection(input);
+    await this.#emitActivity({
+      id: activityId,
+      phase: "started",
+      tool: executionSpec.name,
+      family: executionSpec.family,
+      mutating: executionSpec.mutating,
+      caseId: input?.caseId ?? this.#context?.activeCaseId ?? null,
+      at: new Date().toISOString(),
+      ...inputProjection,
+    });
     try {
       if (record.retiring || !this.#desiredNames.has(record.name)) {
         throw new ToolError(
@@ -440,15 +490,27 @@ export class WebMcpGateway {
       invocation = currentSpec.mutating
         ? await this.#claimIdempotentInvocation(currentSpec, input, options)
         : null;
-      if (invocation?.replay) return invocation.response;
+      if (invocation?.replay) {
+        await this.#emitActivity({
+          id: activityId,
+          phase: "replayed",
+          tool: currentSpec.name,
+          family: currentSpec.family,
+          mutating: currentSpec.mutating,
+          caseId: input?.caseId ?? context.activeCaseId ?? null,
+          at: new Date().toISOString(),
+          receipt: activityReceipt(invocation.response?.receipt),
+        });
+        return invocation.response;
+      }
 
       await this.#enforceRevisions(input, context);
       if (currentSpec.mutating) await this.#markInvocationExecuting(invocation);
-      const result = await this.#perform(currentSpec, input, options, context, invocation?.durability ?? null);
+      const result = await this.#perform(currentSpec, input, options, context, invocation?.durability ?? null, activityId);
       if (!currentSpec.mutating) return result;
       return await this.#completeInvocation(invocation, result);
     } catch (error) {
-      const failure = await this.#recordFailure(executionSpec, input, error, invocation?.durability ?? null);
+      const failure = await this.#recordFailure(executionSpec, input, error, invocation?.durability ?? null, activityId);
       if (invocation?.claimed) return this.#completeInvocation(invocation, failure);
       return failure;
     } finally {
@@ -731,7 +793,7 @@ export class WebMcpGateway {
     }
   }
 
-  async #perform(spec, input, options, contextBefore, invocationDurability = null) {
+  async #perform(spec, input, options, contextBefore, invocationDurability = null, activityId = null) {
     const signal = options?.signal;
     if (signal?.aborted) {
       throw new ToolError("EXECUTION_CANCELED", "The tool execution was canceled.", { retryable: true });
@@ -768,6 +830,16 @@ export class WebMcpGateway {
       idempotencyKey: input.idempotencyKey,
     }));
     await this.#emitReceipt(receipt);
+    await this.#emitActivity({
+      id: activityId ?? activityCallId(),
+      phase: "settled",
+      tool: spec.name,
+      family: spec.family,
+      mutating: spec.mutating,
+      caseId: receipt.caseId,
+      at: new Date().toISOString(),
+      receipt: activityReceipt(receipt),
+    });
     if (spec.mutating) await waitForVisibleSettle(this.ports, signal);
     return successEnvelope({
       data: compactData(raw),
@@ -798,7 +870,7 @@ export class WebMcpGateway {
     });
   }
 
-  async #recordFailure(spec, input, error, invocationDurability = null) {
+  async #recordFailure(spec, input, error, invocationDurability = null, activityId = null) {
     const normalized = normalizeToolError(error);
     let context;
     try {
@@ -821,6 +893,17 @@ export class WebMcpGateway {
       idempotencyKey: input?.idempotencyKey,
     }));
     await this.#emitReceipt(receipt);
+    await this.#emitActivity({
+      id: activityId ?? activityCallId(),
+      phase: "rejected",
+      tool: spec.name,
+      family: spec.family,
+      mutating: spec.mutating,
+      caseId: receipt.caseId,
+      at: new Date().toISOString(),
+      errorCode: normalized.code,
+      receipt: activityReceipt(receipt),
+    });
     return errorEnvelope(normalized, {
       state: context ? publicContext(context) : undefined,
       receipt,
@@ -901,6 +984,15 @@ export class WebMcpGateway {
       await this.onReceipt(cloneJson(receipt));
     } catch {
       // The internal ledger remains authoritative if a transient renderer fails.
+    }
+  }
+
+  async #emitActivity(event) {
+    if (typeof this.onActivity !== "function") return;
+    try {
+      await this.onActivity(cloneJson(event));
+    } catch {
+      // Agent activity is transient presentation feedback; execution remains authoritative.
     }
   }
 }
