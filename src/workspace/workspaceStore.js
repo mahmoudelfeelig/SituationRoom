@@ -26,8 +26,14 @@ import { toPresentationSnapshot } from "./presentationAdapter.js";
 import { proposeCaseFromDocuments } from "./importMapper.js";
 import { createDecisionPacket, serializeDecisionPacket } from "./exporter.js";
 import { assessAgentArtifact } from "./agentArtifactPolicy.js";
+import { proposeSemanticIntake } from "./semanticIntake.js";
 import { clearWebMcpJournalDatabase } from "../webmcp.js";
 import { phaseForWorkspaceRoute, workspacePathFor } from "./workspaceRouter.js";
+import {
+  createAgentActivityState,
+  diffPresentationPlans,
+  reduceAgentActivity,
+} from "./agentActivity.js";
 
 const PRESENTATION_STORAGE_KEY = "situation-room:presentation:v2";
 const ACTIVE_CASE_STORAGE_KEY = "situation-room:active-case:v1";
@@ -72,6 +78,8 @@ const initialState = Object.freeze({
   question: "",
   compositionPhase: "idle",
   compositionMessage: "",
+  presentationDiff: diffPresentationPlans(null, null),
+  agentActivity: createAgentActivityState(),
   frozen: false,
   governance: { id: null, version: 0, manualFrozen: false, humanCheckpoints: [] },
   pins: [],
@@ -214,9 +222,13 @@ async function getWorkspaceAuthorityContextForCase(decisionCase) {
   );
   const sharedAuthorityAvailable = state.persistenceMode === "durable";
   const governance = await readGovernance(caseId);
+  const pendingHumanAuthorityCheckpoint = Boolean(
+    localApprovalOpen || governanceHasPendingHumanResolution(governance)
+  );
   return {
     frozen: Boolean(decisionCase?.status === "approved" || governance.manualFrozen),
-    pendingHumanCheckpoint: Boolean(localApprovalOpen || localImportReviewOpen || governanceHasPendingHumanResolution(governance)),
+    pendingHumanCheckpoint: Boolean(localImportReviewOpen || pendingHumanAuthorityCheckpoint),
+    pendingHumanAuthorityCheckpoint,
     governanceVersion: governance.version,
     sharedAuthorityAvailable,
   };
@@ -455,6 +467,10 @@ async function materializeImportReview(jobOrId, context = {}) {
     const mapped = await pack.mapImportedDocuments(rawDocuments, {});
     const mappingErrors = (mapped.diagnostics ?? []).filter((entry) => entry.severity === "error");
     const documents = sanitizedDocumentsForProposal(rawDocuments, mapped);
+    const semanticProposal = proposeSemanticIntake({
+      documents,
+      agentSuggestions: job.semanticAgentSuggestions ?? [],
+    });
     if (mappingErrors.length) {
       const recovery = {
         ok: false,
@@ -504,6 +520,7 @@ async function materializeImportReview(jobOrId, context = {}) {
       job,
       documents,
       proposal,
+      semanticProposal,
       caseId: job.caseId,
       targetMode,
       source: mergedContext.source,
@@ -512,8 +529,8 @@ async function materializeImportReview(jobOrId, context = {}) {
     setState({
       activeImportReview: review,
       intakeOpen: true,
-      lastAnnouncement: `Import review is ready: ${proposal.summary.alternatives} alternatives and ${proposal.summary.criteria} criteria visible for human confirmation.`,
-    }, { type: "import.review-ready", job, proposal: proposal.summary, source: mergedContext.source });
+      lastAnnouncement: `Import review is ready: ${proposal.summary.alternatives} alternatives, ${proposal.summary.criteria} criteria, and ${semanticProposal.summary.conflicts} unresolved semantic conflicts visible for human confirmation.`,
+    }, { type: "import.review-ready", job, proposal: proposal.summary, semantic: semanticProposal.summary, source: mergedContext.source });
     return review;
   })();
   importReviewBuilds.set(job.id, build);
@@ -889,13 +906,13 @@ export async function initializeWorkspace({ initialRoute } = {}) {
         void (async () => {
           const workspace = await runtime.getWorkspaceState();
           setState({ workspace }, event);
-          if (["import.review_required", "import.mapping_changed"].includes(event?.type) && event.jobId) {
+          if (["import.review_required", "import.mapping_changed", "import.semantic_suggestions_changed"].includes(event?.type) && event.jobId) {
             if (state.activeImportReview && state.activeImportReview.job.id !== event.jobId) {
               setState({ lastAnnouncement: "Another agent import is queued behind the visible human review." }, event);
               return;
             }
-            if (event.type === "import.mapping_changed") importReviewBuilds.delete(event.jobId);
-            await materializeImportReview(event.jobId, { force: event.type === "import.mapping_changed" });
+            if (["import.mapping_changed", "import.semantic_suggestions_changed"].includes(event.type)) importReviewBuilds.delete(event.jobId);
+            await materializeImportReview(event.jobId, { force: ["import.mapping_changed", "import.semantic_suggestions_changed"].includes(event.type) });
           }
         })().catch((error) => {
           setState({
@@ -1160,23 +1177,31 @@ async function commitPresentation(plan, { source = "manual", actor = ACTOR, cont
   const historyEntry = { plan, receipt };
   const truncatedHistory = state.history.slice(0, state.historyCursor + 1);
   const history = [...truncatedHistory, historyEntry].slice(-24);
-  setState((current) => ({
-    ...current,
-    plan,
-    snapshot: nextSnapshot,
-    viewRevision: plan.nextViewRevision,
-    lens: plan.lens,
-    question: plan.question,
-    focusRef: plan.focus?.entityRef ?? current.focusRef,
-    activePathId: plan.focus?.pathId ?? current.activePathId,
-    history,
-    historyCursor: history.length - 1,
-    receipts: [receipt, ...current.receipts].slice(0, 100),
-    compositionPhase: "idle",
-    compositionMessage: "",
-    lastAnnouncement: `${plan.lens} room committed at view revision ${plan.nextViewRevision}. ${plan.preservedPins.length} human pin${plan.preservedPins.length === 1 ? "" : "s"} preserved.`,
-    error: null,
-  }), { type: "presentation.committed", receipt, plan });
+  const presentationDiff = diffPresentationPlans(state.plan, plan);
+  const commitState = () => setState((current) => ({
+      ...current,
+      plan,
+      snapshot: nextSnapshot,
+      viewRevision: plan.nextViewRevision,
+      lens: plan.lens,
+      question: plan.question,
+      focusRef: plan.focus?.entityRef ?? current.focusRef,
+      activePathId: plan.focus?.pathId ?? current.activePathId,
+      history,
+      historyCursor: history.length - 1,
+      receipts: [receipt, ...current.receipts].slice(0, 100),
+      compositionPhase: "idle",
+      compositionMessage: "",
+      presentationDiff,
+      lastAnnouncement: `${plan.lens} room committed at view revision ${plan.nextViewRevision}. ${plan.preservedPins.length} human pin${plan.preservedPins.length === 1 ? "" : "s"} preserved.`,
+      error: null,
+    }), { type: "presentation.committed", receipt, plan, presentationDiff });
+  if (!state.reducedMotion && typeof globalThis.document?.startViewTransition === "function") {
+    const transition = globalThis.document.startViewTransition(commitState);
+    await transition.updateCallbackDone;
+  } else {
+    commitState();
+  }
   writePresentationPreferences(context.caseId, {
     viewRevision: plan.nextViewRevision,
     lens: plan.lens,
@@ -2095,6 +2120,13 @@ export function addExternalReceipt(receipt) {
   persistCaseSessionState();
 }
 
+export function recordAgentActivity(event) {
+  setState((current) => ({
+    ...current,
+    agentActivity: reduceAgentActivity(current.agentActivity, event),
+  }));
+}
+
 export function addExternalReviewArtifact(event) {
   const incoming = event?.artifact ?? event;
   if (!incoming?.id || !incoming?.kind) return;
@@ -2284,6 +2316,7 @@ export function getWorkspaceRuntimePort() {
         sharedAuthorityAvailable: authority.sharedAuthorityAvailable,
         governedAgentMutationsBlocked: !authority.sharedAuthorityAvailable,
         pendingHumanCheckpoint: authority.pendingHumanCheckpoint || hasPendingHumanCheckpoint(),
+        pendingHumanAuthorityCheckpoint: authority.pendingHumanAuthorityCheckpoint,
         governanceVersion: authority.governanceVersion,
         decisionRevision: state.activeCase?.revision ?? null,
         decisionHash: state.activeCase ? getDecisionHash(state.activeCase) : null,
