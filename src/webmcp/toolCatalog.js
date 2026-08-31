@@ -146,6 +146,7 @@ function createSpec(name, options, capabilities) {
     mutating,
     decisionMutation: Boolean(options.decisionMutation),
     humanCheckpoint: Boolean(options.humanCheckpoint),
+    allowedWithHumanCheckpoint: Boolean(options.allowedWithHumanCheckpoint),
     allowedWhenFrozen: Boolean(options.allowedWhenFrozen),
     prohibitedInRegulated: Boolean(options.prohibitedInRegulated),
     requiresCase: Boolean(options.requiresCase),
@@ -449,6 +450,24 @@ export function createToolCatalog({
           signal,
         }),
       ),
+  });
+  add("propose_semantic_mapping", {
+    family: "intake",
+    description: "Stage bounded cross-document entity-resolution or field-mapping suggestions for visible human review. Suggestions must cite exact import fragments and cannot override deterministic evidence, commit a case, or resolve conflicts automatically.",
+    mutating: true,
+    allowedWithHumanCheckpoint: true,
+    permission: "import:write",
+    phases: ["import_review"],
+    requiredPort: "imports.proposeSemanticMapping",
+    untrusted: true,
+    execute: async (input, { actor, signal }) => unwrapPortResult(
+      await ports.imports.proposeSemanticMapping(input.jobId, input.suggestions, {
+        expectedImportVersion: input.expectedImportVersion,
+        idempotencyKey: input.idempotencyKey,
+        actor,
+        signal,
+      }),
+    ),
   });
   add("retry_import", {
     family: "intake",

@@ -108,12 +108,16 @@ export async function readCapabilityContext(ports) {
       contract?.pendingHumanCheckpoint ??
       presentation?.pendingHumanCheckpoint,
   );
+  const phase = inferPhase({ workspace, contract, imports: importEntries, frozen });
+  const pendingHumanAuthorityCheckpoint = workspace.pendingHumanAuthorityCheckpoint === undefined
+    ? pendingHumanCheckpoint && phase !== "import_review"
+    : Boolean(workspace.pendingHumanAuthorityCheckpoint);
   const decisionRevision =
     workspace.decisionRevision ?? workspace.activeCase?.decisionRevision ?? contract?.revision ?? 0;
   const viewRevision = presentation?.viewRevision ?? workspace.viewRevision ?? 0;
 
   return {
-    phase: inferPhase({ workspace, contract, imports: importEntries, frozen }),
+    phase,
     workspace,
     activeCaseId,
     contract,
@@ -127,6 +131,7 @@ export async function readCapabilityContext(ports) {
     permissions,
     frozen,
     pendingHumanCheckpoint,
+    pendingHumanAuthorityCheckpoint,
     decisionRevision,
     decisionHash: workspace.decisionHash ?? contract?.decisionHash ?? null,
     viewRevision,

@@ -56,7 +56,10 @@ export function evaluateCapability(spec, context, ports) {
   if (context.frozen && spec.mutating && !spec.allowedWhenFrozen) {
     return { allowed: false, reason: "room_frozen" };
   }
-  if (context.pendingHumanCheckpoint && spec.mutating) {
+  if (context.pendingHumanAuthorityCheckpoint && spec.mutating) {
+    return { allowed: false, reason: "human_checkpoint_pending" };
+  }
+  if (context.pendingHumanCheckpoint && spec.mutating && !spec.allowedWithHumanCheckpoint) {
     return { allowed: false, reason: "human_checkpoint_pending" };
   }
   if (context.domainRisk === "regulated" && spec.prohibitedInRegulated) {

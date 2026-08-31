@@ -133,6 +133,54 @@ export const IMPORT_SCHEMAS = Object.freeze({
     },
     ["jobId", "documentId", "sheetName", "headerRow", "mapping", "expectedImportVersion", "idempotencyKey"],
   ),
+  propose_semantic_mapping: objectSchema(
+    {
+      jobId: identifierSchema,
+      suggestions: {
+        type: "array",
+        minItems: 1,
+        maxItems: 128,
+        items: {
+          oneOf: [
+            objectSchema(
+              {
+                id: identifierSchema,
+                kind: { type: "string", const: "entity-resolution" },
+                aliases: { type: "array", minItems: 2, maxItems: 8, uniqueItems: true, items: { type: "string", minLength: 1, maxLength: 160 } },
+                confidence: { type: "number", minimum: 0, maximum: 1 },
+                sourceRefs: {
+                  type: "array",
+                  minItems: 1,
+                  maxItems: 16,
+                  items: objectSchema({ documentId: identifierSchema, fragmentId: identifierSchema }, ["documentId", "fragmentId"]),
+                },
+              },
+              ["id", "kind", "aliases", "confidence", "sourceRefs"],
+            ),
+            objectSchema(
+              {
+                id: identifierSchema,
+                kind: { type: "string", const: "field-mapping" },
+                sourceField: { type: "string", minLength: 1, maxLength: 160 },
+                targetCriterion: { type: "string", minLength: 1, maxLength: 160 },
+                confidence: { type: "number", minimum: 0, maximum: 1 },
+                sourceRefs: {
+                  type: "array",
+                  minItems: 1,
+                  maxItems: 16,
+                  items: objectSchema({ documentId: identifierSchema, fragmentId: identifierSchema }, ["documentId", "fragmentId"]),
+                },
+              },
+              ["id", "kind", "sourceField", "targetCriterion", "confidence", "sourceRefs"],
+            ),
+          ],
+        },
+      },
+      expectedImportVersion: { type: "integer", minimum: 0 },
+      idempotencyKey: idempotencyKeySchema,
+    },
+    ["jobId", "suggestions", "expectedImportVersion", "idempotencyKey"],
+  ),
   retry_import: objectSchema(
     {
       jobId: identifierSchema,
