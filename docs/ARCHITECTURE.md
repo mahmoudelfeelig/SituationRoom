@@ -7,6 +7,7 @@ SituationRoom separates source intake, canonical decisions, deterministic analys
 ```text
 untrusted files or text
   -> bounded native extraction and diagnostics
+  -> conservative cross-document semantic proposal
   -> human import review
   -> typed decision contract and evidence graph
   -> deterministic domain policy and evaluation
@@ -26,6 +27,7 @@ The application is local-first. IndexedDB persists cases, documents, import jobs
 | Deterministic analysis | domain-permitted eligibility, blockers, normalized metrics, rankings, requirement evidence, paths, and scenario results | pure domain-pack evaluators |
 | Presentation | lens, semantic recipe, trusted instruments, focus, pins, view revision and history | manual controls or validated presentation commands |
 | Interaction | open dialogs, keyboard focus, local composition phase, staged files | local interface |
+| Agent activity | transient tool lifecycle, privacy-bounded argument keys, receipt deltas | actual WebMCP gateway callbacks only |
 | Shared governance | governance version, manual freeze, and complete cited human-resolution checkpoints | guarded request creation; human-only resolution and freeze controls |
 | Capability context | phase, role, permissions, policy, revisions, shared-authority availability, checkpoint state, and freeze state | derived by the WebMCP gateway; never supplied by imported content |
 
@@ -51,6 +53,8 @@ Successful acceptance copies sanitized documents, fragments, claims, and anchors
 
 Every WebMCP source read requires `caseId`. During `import_review`, the owning `jobId` is also required and cross-case or cross-job references fail closed. In `contract_draft` and eligible `analysis` contexts, source reads reject `jobId` and use only the case's canonical sanitized documents. Candidate and health-plan projections apply after this scope check.
 
+Normalized import documents also feed a deterministic semantic proposal. It resolves only exact normalized identities, keeps near aliases as proposals, groups evidence by normalized field, preserves contradictory values, and refuses to infer from missing locators or unstructured prose. Browser-agent suggestions are separately validated against the exact supporting import fragments, count and byte limits, and the current import version. They never mutate deterministic entities, facts, mappings, conflicts, or confidence.
+
 ## Composition boundary
 
 The agent stages the room; it never rewrites the application. A versioned semantic recipe may choose a supported lens, layout grammar, density, allowlisted instrument types, canonical entity references, source-backed paths, and bounded question text.
@@ -62,6 +66,8 @@ The compiler owns component definitions, hierarchy, typography, color, responsiv
 The browser URL is a navigable projection of workspace state, not a second source of authority. A dependency-free parser maps the archive, intake, Model, four analysis lenses, Review, and Outputs to fixed route shapes. Initial route settlement happens before WebMCP registration. Human navigation pushes history; automatic lifecycle normalization replaces it; `popstate` uses the same guarded case, phase, and lens transitions as visible controls.
 
 Only the selected route's main work surface is mounted. The case-file rail, compact governance seal, and route heading remain stable; full authority gates, prompt ideas, and view history expand on demand. Mobile navigation is removed from the focus order while closed and opens as a focus-managed drawer. Page-level surfaces use one document scroll, with labelled overflow reserved for data instruments that genuinely require it.
+
+When Site tools are active, the analysis surface adds a compact live execution thread scoped to the active case. Its nodes come from actual gateway start, settle, reject, and replay events and hold no raw input. Stable semantic instrument identifiers opt into Chromium view transitions so a recompose shows location and hierarchy changes without animating canonical content arbitrarily; reduced-motion removes the transition. The audit overlay projects the append-only receipt ledger into an ordered, comparable decision time machine without becoming an authority source itself.
 
 Archive, unknown-route, and cross-case transition surfaces set a separate navigation-surface context. Outside a settled case route, WebMCP exposes only the empty/intake orientation contract rather than retaining mutation tools for a persisted background case. Pending import review owns `/new`, pending human resolution owns Review, and frozen cases normalize to read-only analysis.
 

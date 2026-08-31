@@ -19,10 +19,12 @@ Evidence to show:
 - Health-plan identity and purpose policy uses the canonical `health-plan` pack and requires source-backed plan identity plus positively typed plan aspects.
 - Bounded output retention keeps the latest 20 artifacts per case and surfaces cleanup failures rather than claiming silent durability.
 - Ten model-facing selection and recovery tasks in `tests/fixtures/webmcp/evals.json`.
+- A fresh-arm in-product Site-tools acceptance console, privacy-bounded evidence export, and offline corpus scorer that refuses to convert missing or rejected work into a pass.
+- A real gateway-driven activity thread that shows tool causality and receipt-backed decision/view deltas without retaining raw inputs.
 
 ## Execution
 
-The release is a complete local-first workflow, not a rendering prototype. It includes multi-format import, quarantine and explicit recovery, full inferred-model review, a typed model editor, draft activation, domain-permitted deterministic evaluation, four structural view grammars, 34 trusted instruments, collaboration, saved and inline scenarios, sensitivity and minimum-change analysis, source tracing, seven export formats, policy-dependent human approval, shared freeze, persistence, reset, Sites packaging, and no-WebMCP parity.
+The release is a complete local-first workflow, not a rendering prototype. It includes multi-format import, conservative cross-document semantic resolution, agent-guided source-cited mapping proposals, quarantine and explicit recovery, full inferred-model review, a typed model editor, draft activation, domain-permitted deterministic evaluation, four structural view grammars, 34 trusted instruments, collaboration, saved and inline scenarios, sensitivity and minimum-change analysis, source tracing, decision playback, seven export formats, policy-dependent human approval, shared freeze, persistence, reset, Sites packaging, and no-WebMCP parity.
 
 Evidence to show:
 
@@ -43,6 +45,8 @@ The valuable unit is not an AI answer. It is a cited, revisable decision record 
 The page is a Living Caseboard that the agent recompiles around the current question. A causal investigation, aligned comparison, counterfactual fork, and stakeholder council are different spatial grammars with a recurring red evidence thread. The website becomes an authoritative visualization and computation surface while the agent becomes an intent interpreter and composition planner.
 
 The universal kernel and allowlisted instrument grammar demonstrate a plausible new class of agent-native sites: the application does not expose a fixed dashboard for every task, and the agent does not generate arbitrary UI code.
+
+The recurring oxblood thread now has three causal jobs: evidence-to-outcome trace, real agent-tool execution, and ordered decision history. That makes autonomous recomposition legible as a state transition rather than an unexplained animation.
 
 ## Claims to avoid
 

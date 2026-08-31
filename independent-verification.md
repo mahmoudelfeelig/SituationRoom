@@ -2,7 +2,7 @@
 
 ## Verification scope
 
-This record covers the generalized Decision OS, its four domain packs, native import and recovery pipeline, typed decision kernel, routed agent-constructed room views, shared human-governance boundary, browser UI, real WebMCP gateway, and public production behavior.
+This record covers the generalized Decision OS, its four domain packs, native import and recovery pipeline, cross-document semantic intake, typed decision kernel, routed agent-constructed room views, receipt-backed agent activity and decision playback, model-evidence scoring, shared human-governance boundary, browser UI, real WebMCP gateway, and public production behavior.
 
 The public production endpoint was verified. This document deliberately records no host, credential, private-network, or origin-routing detail. No challenge submission or external message was sent.
 
@@ -23,12 +23,12 @@ The named npm gates were executed directly and serially after the final relevant
 
 | Gate | Final post-correction result |
 | --- | --- |
-| Deterministic Node suite: kernel, import, persistence, routing, workspace, policy, exporter, presentation, and WebMCP | Passed: 152/152 tests |
+| Deterministic Node suite: kernel, import, semantic intake, persistence, routing, workspace, policy, exporter, presentation, activity/playback, model evidence, and WebMCP | Passed: 187/187 tests |
 | OCR smoke test | Passed: local OCR recovered `SITUATION ROOM 2040` |
 | Browser kernel smoke | Passed: local runtime, OCR, IndexedDB, invocation journal, receipts, and retry recovery |
-| Sites worker, Hetzner hosting, and CI/CD contract | Passed: 11/11 tests |
+| Sites worker, Hetzner hosting, and CI/CD contract | Passed: 12/12 tests |
 | Presentation browser checks | Passed: 2/2 tests |
-| Full UI suite in installed Chrome and Edge | Passed: 60/60 tests |
+| Full UI suite in installed Chrome and Edge | Passed: 62/62 tests |
 | Real WebMCP suite in installed Chrome and Edge | Passed: 14/14 tests using the browser feature flag and page-registered API |
 | Production build and Sites artifacts | Passed; all three required artifacts verified on disk |
 
@@ -44,9 +44,11 @@ The repository now exposes only a thin production caller. After a successful tru
 
 ## Actual Codex connection status
 
-The automated WebMCP suite uses the real top-level browser API in installed Chrome and Edge, but it selects and executes tool names directly. As of this checkpoint, no Codex model had independently discovered and selected SituationRoom Site tools from a natural-language request, and no **Recently used > Sources** capture had been recorded. That separate acceptance gate is defined in [`docs/CODEX_SITE_TOOLS_ACCEPTANCE.md`](docs/CODEX_SITE_TOOLS_ACCEPTANCE.md).
+The automated WebMCP suite uses the real top-level browser API in installed Chrome and Edge, but it selects and executes tool names directly. The application now includes a fresh-arm, case-scoped Site-tools acceptance console and privacy-bounded evidence export, plus an offline scorer for the ten-case corpus. As of this checkpoint, no Codex model had independently discovered and selected SituationRoom Site tools from a natural-language request, and no **Recently used > Sources** capture had been recorded. The console therefore reports no model pass. That separate acceptance gate is defined in [`docs/CODEX_SITE_TOOLS_ACCEPTANCE.md`](docs/CODEX_SITE_TOOLS_ACCEPTANCE.md).
 
 ## Public production verification
+
+The public results below describe the previously deployed release. The current semantic-intake, activity, playback, and evaluation-console expansion remains an uncommitted local working tree at this checkpoint and must not be represented as live until a separately authorized push and deployment complete successfully.
 
 The production release is available at `https://situationroom.elfeel.me`. Verification is intentionally limited to the same public surfaces available to a reviewer; it does not require privileged host access, direct-origin requests, DNS overrides, or knowledge of the private deployment topology.
 
@@ -66,7 +68,7 @@ An independent reviewer can repeat the public checks with a standard HTTPS clien
 
 ## What the browser evidence establishes
 
-A passing UI matrix establishes all four decision domains, canonical routes and browser history, isolated work surfaces, structural room recomposition, scenario work, editing, import review, approval restrictions, responsive layouts, accessibility, keyboard-only dialog behavior, shared freeze enforcement, session-only fallback, bounded output retention, and state continuity after reload.
+A passing local UI matrix establishes all four decision domains, canonical routes and browser history, isolated work surfaces, structural room recomposition, real-call activity display, decision-history comparison, semantic import review, scenario work, editing, approval restrictions, responsive layouts, accessibility, keyboard-only dialog behavior, shared freeze enforcement, session-only fallback, bounded output retention, and state continuity after reload.
 
 The real WebMCP matrix invokes page-registered tools rather than test doubles. A passing final run establishes state-aware discovery, optimistic concurrency, durable idempotent replay, conflicting-key rejection, safe expired pre-execution reclamation, fail-closed outcome uncertainty after the execution boundary, exact case/job source scoping, import review, shared human-resolution staging, cross-tab freeze propagation, session-only mutation retirement, candidate-domain privacy projections, authoritative domain mismatch denial, protected-term search filtering without a presence oracle, bounded output retention, and reload-safe continuation.
 
@@ -90,4 +92,4 @@ These are surfaced limitations, not hidden success paths.
 
 ## Verdict
 
-The routed local build passes every directly executed deterministic, OCR, browser-kernel, hosting-contract, presentation, Chrome/Edge UI, native WebMCP, audit, and production-build gate. The first GitHub run independently confirmed repository lint and the full Windows browser matrix, then correctly blocked release on the clean-checkout ordering defect described above. Actual Codex natural-language Site tools acceptance, recording the challenge demonstration, and submitting the entry remain separate operational gates.
+The routed local build passes every directly executed deterministic, OCR, browser-kernel, hosting-contract, presentation, Chrome/Edge UI, native WebMCP, audit, and production-build gate recorded above. The earlier GitHub run independently confirmed repository lint and the then-current Windows browser matrix, then correctly blocked release on the clean-checkout ordering defect described above; it is not CI evidence for the present uncommitted expansion. Actual Codex natural-language Site tools acceptance, an authorized commit/push/deployment, recording the challenge demonstration, and submitting the entry remain separate operational gates.

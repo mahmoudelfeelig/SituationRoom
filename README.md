@@ -9,7 +9,11 @@ The visual concept is a Living Caseboard: an asymmetric editorial evidence desk 
 - One typed decision kernel shared by procurement, candidate review, consumer health-plan comparison, and general choice domains.
 - Domain-permitted deterministic analysis: scoring, eligibility, and constraint gates where allowed; requirement-evidence analysis for candidate review; and source-backed claims, causal paths, uncertainty, conflicts, scenarios, revisions, idempotency, and audit receipts.
 - Four genuinely structural view grammars and 34 allowlisted decision instruments. Agents select semantic instruments and canonical IDs; they cannot inject HTML, CSS, code, formulas, colors, facts, or authority.
+- A truthful browser-agent channel that shows only tool calls the page actually receives, remains accurate during overlapping executions, and separates canonical changes from presentation-only recomposition through receipt-backed deltas.
+- A decision time machine that orders canonical, presentation, import, governance, workspace, and agent receipts; compares any two events; and traces the canonical entity IDs affected.
 - A complete manual lifecycle: import, inspect, review every inferred alternative, criterion, score range, gate, evidence value and status, anchor, and authority; edit the full typed model; activate; analyze; collaborate; prepare outputs; preview approval where the domain permits it; and human-only freeze.
+- A cross-document semantic intake review that resolves exact identities, proposes near aliases without merging them, preserves contradictory values as conflicts, shows confidence gates and exact anchors, and quarantines agent mapping suggestions in a separate human-review layer.
+- An in-product Codex Site-tools acceptance console plus a ten-case offline scorer. Neither can manufacture a model pass: evidence is captured only from page-received calls after a fresh armed run.
 - Four seeded synthetic rooms, no API keys or account requirement, and an explicit local reset that erases browser data before cleanly reseeding the demonstration.
 - Local IndexedDB persistence for cases, source material, import recovery, prepared outputs, audited commands, per-case presentation/review ledgers, shared case governance, and the transactional WebMCP journal. Active-case selection remains browser-local; presentation and review state carries no decision authority even when it is durably mirrored. A clearly labeled session-only fallback keeps the manual workspace usable but retires governed agent mutations because shared authority cannot be guaranteed.
 - Responsive desktop, tablet, and mobile compositions with keyboard navigation, an accessible outline, high-contrast-compatible controls, and reduced-motion support.
@@ -32,6 +36,8 @@ The native intake pipeline parses text, Markdown, JSON, CSV, TSV, HTML, XML, YAM
 
 New-case imports enter as reviewed drafts, never active contracts. Values below the confidence threshold remain proposed evidence and are ignored by scoring and gates until a person verifies or rejects them. Confirmation is bound to the exact durable import version inside a serialized commit transition. After a canonical commit, sanitized documents and anchors remain in the case while transient parsed documents and retained source bytes are deleted. If deletion fails, the committed case is not replayed: the import exposes a cleanup-pending recovery action that retries deletion only. Discard uses the same verified, recoverable cleanup boundary.
 
+Normalized table cells, structured fields, workbook ranges, and conservative key-value text pass through the same semantic intake proposal. Exact normalized identities may merge across sources; near aliases, unknown fields, low-confidence values, unlocated facts, duplicates, and contradictions remain explicit review items. `propose_semantic_mapping` lets a browser agent stage bounded, source-cited suggestions against the exact import version, but those suggestions cannot overwrite deterministic evidence, resolve a conflict, or commit the case.
+
 Legacy Office files, OpenDocument files, MSG, HEIC, and Parquet are recognized but deliberately return a visible unsupported-format diagnostic because no safe native parser is bundled. Password-protected sources must be explicitly decrypted before import. Image OCR uses the bundled English language data.
 
 Decision packets can be prepared locally as JSON, JSON-LD, CSV, HTML, XLSX, DOCX, or print-ready HTML for browser PDF printing. The latest 20 artifacts per case are retained; evicted blobs are deleted and any retention-cleanup failure becomes a visible session-only warning that requires a workspace reset. Candidate-review packets are requirement-evidence-only: they contain no eligibility, score, rank, blocker, recommendation, or employment outcome. WebMCP can prepare an artifact, but a person must still download, print, publish, or send it.
@@ -53,6 +59,8 @@ No registered tool can approve or reject a decision, impersonate a human pin, hi
 
 Every state-changing call is idempotent and policy checked again at execution time; mutations of existing versioned state also require the applicable optimistic revision. Successful changes settle visibly and emit a receipt before the tool resolves. Manual freeze and complete cited human-resolution checkpoints use a separate versioned governance record shared across tabs. While a resolution is open, every mutating WebMCP tool is retired; resolve and reject require a human rationale, while defer deliberately keeps the checkpoint open. In durable mode, browser operation replay/conflict records and the bounded receipt ledger survive reload; canonical commands and import starts also retain their own durable idempotency records. The journal can reclaim an expired pre-execution claim, but once its durable execution boundary is crossed, a missing result is reported as outcome-uncertain and never repeated automatically. The complete workflow remains usable when WebMCP is unavailable.
 
+The live agent channel stores tool name, argument-key names, a tiny allowlist of non-sensitive routing values, status, and bounded receipt deltas. It never stores raw tool input. The acceptance scorer treats rejected expected calls as failures and forbidden attempts as failures even when the gateway safely blocks them.
+
 ## Run locally
 
 ```bash
@@ -73,6 +81,12 @@ npm run test:presentation
 npm run test:ui
 npm run test:webmcp
 npm run build
+```
+
+After a real Codex run, score an exported ten-case trace corpus with:
+
+```bash
+npm run test:webmcp:score -- model-traces.json report.json
 ```
 
 `npm run test:ui` runs every black-box interface specification in installed Google Chrome and Microsoft Edge. `npm run test:webmcp` launches both browsers with WebMCP enabled and exercises tool discovery and execution through `getTools()` and `executeTool()`. `npm run test:all` executes the entire release gate. Exact results from the final post-correction aggregate run belong in [`independent-verification.md`](independent-verification.md), not in evergreen product copy.
@@ -101,7 +115,7 @@ src/persistence/            IndexedDB and memory repositories
 src/presentation/           semantic recipes, compiler, policies, and instrument registry
 src/components/             four layout grammars, instruments, and workspace surfaces
 src/workspace/              application store, adapters, import mapping, and exporters
-src/webmcp/                 capability policy, schemas, gateway, receipts, and tool catalog
+src/webmcp/                 capability policy, schemas, gateway, receipts, tool catalog, and model-evidence scoring
 tests/                      unit, renderer, browser, WebMCP, packaging, and smoke tests
 deploy/hetzner/             immutable image activation and rollback contract
 .github/workflows/          trusted CI artifact and automatic production deployment

@@ -30,6 +30,7 @@ const registration = await registerSituationRoomTools({
   actor: { id: "browser-agent", type: "agent", label: "Browser agent" },
   onStatus: setWebMcpStatus,
   onReceipt: appendVisibleToolReceipt,
+  onActivity: recordPrivacyBoundedAgentActivity,
   invocationStore: new IndexedDbInvocationStore(),
   receiptLedger: new IndexedDbReceiptLedger(),
 });
@@ -122,6 +123,7 @@ interface ImportPort {
   inspectDocument(documentId, options: { caseId: string; jobId?: string; includeRegions?: boolean; cursor?: string; limit?: number }): Promise<unknown>;
   searchFragments(query: { caseId: string; jobId?: string; query: string; documentIds?: string[]; cursor?: string; limit?: number }): Promise<unknown>;
   mapTableSchema(documentId, mapping, options?): Promise<unknown>;
+  proposeSemanticMapping(jobId, suggestions, options?): Promise<unknown>;
   retryImport(jobId, options?): Promise<ImportJob>;
   readSourceSpans?(documentId, anchors, options: { caseId: string; jobId?: string }): Promise<unknown>;
   requestHumanReview?(request): Promise<unknown>;
@@ -136,6 +138,8 @@ For a new case, every input must be a staged source, all staged sources must car
 `inspect_document`, `search_sources`, and `read_source_spans` always require `caseId`. During `import_review`, they also require the owning `jobId`; cross-case and cross-job references return `NOT_FOUND`. In `contract_draft` and eligible `analysis` contexts, `jobId` is rejected and reads come only from canonical sanitized case documents. After verified cleanup, accepted-import source bytes and transient parsed documents are purged while canonical sanitized copies and anchors remain readable; a deletion failure stays visibly cleanup-pending and retries deletion only.
 
 Candidate-review and health-plan projections apply after scope enforcement and before `inspect_document`, `search_sources`, and `read_source_spans` return. Candidate projection redacts protected tabular columns, correlated row values, structured metadata, unsafe diagnostics, and unblinded narrative material. Search totals and pagination are recomputed after projection so protected-value queries do not become a presence oracle. Health-plan projection removes personal, demographic, and clinical fields and withholds unstructured personal clinical material until a person supplies a plan-term-only extract.
+
+`propose_semantic_mapping` is available only for the owning review-required job. Each bounded suggestion must cite exact supporting document and fragment IDs already authorized for that job and carry the current import version plus an idempotency key. The coordinator stores the suggestions and their hash as a new import revision. The deterministic semantic proposal revalidates them into a separate agent-proposal collection; they cannot override evidence mappings, resolve conflicts, accept the import, or remain active while an approval or shared human-resolution authority checkpoint is open.
 
 ### Optional presentation port
 
@@ -247,6 +251,10 @@ Receipts are bounded to the latest 100 entries, retained in an IndexedDB ledger,
 - Idempotency key and replay status
 
 The UI should render these receipts as agent-authored actions, visually distinct from human approvals and pins.
+
+The optional `onActivity` callback is transient presentation feedback around the real registered-tool callback. It receives a random call ID, tool family, status, case scope, argument-key names, a small allowlist of non-sensitive routing values, and a bounded receipt projection. Raw arguments, source text, prompts, personal data, and arbitrary string values are never included. Callback failure cannot alter authoritative execution.
+
+The in-product acceptance console arms a timestamped, case-scoped capture and scores only subsequent `onActivity` steps. Required calls must settle or replay successfully; a rejected expected call fails. Forbidden tool attempts fail even when policy correctly rejects them. Exported evidence is synthetic-case metadata plus privacy-bounded call records. The ten-case corpus can be scored offline with `npm run test:webmcp:score -- <model-traces.json> [report.json]`; an absent run remains incomplete rather than becoming a claimed zero or simulated pass.
 
 ## Validation and content safety
 
