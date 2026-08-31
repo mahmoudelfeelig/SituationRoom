@@ -769,6 +769,50 @@ export class ImportCoordinator {
     });
   }
 
+  async stageSemanticSuggestions(jobId, suggestions, options = {}) {
+    if (!Array.isArray(suggestions) || suggestions.length > 128) {
+      throw new SituationRoomError(ERROR_CODES.VALIDATION_FAILED, "Semantic intake suggestions must be a bounded array of at most 128 entries.");
+    }
+    let encoded;
+    try {
+      encoded = JSON.stringify(suggestions);
+    } catch {
+      throw new SituationRoomError(ERROR_CODES.VALIDATION_FAILED, "Semantic intake suggestions must be JSON-serializable.");
+    }
+    if (new TextEncoder().encode(encoded).byteLength > 64 * 1024) {
+      throw new SituationRoomError(ERROR_CODES.VALIDATION_FAILED, "Semantic intake suggestions exceed the 64 KB review limit.");
+    }
+    return this.#serializeJob(jobId, async () => {
+      const job = await this.#store.getJob(jobId);
+      if (!job) throw new SituationRoomError(ERROR_CODES.NOT_FOUND, `Import '${jobId}' was not found.`);
+      if (options.expectedImportVersion !== undefined && job.version !== options.expectedImportVersion) {
+        throw new SituationRoomError(ERROR_CODES.STALE_REVISION, "The import changed before semantic suggestions could be staged.", {
+          expectedImportVersion: options.expectedImportVersion,
+          currentImportVersion: job.version,
+        });
+      }
+      if (job.phase !== "review_required") {
+        throw new SituationRoomError(ERROR_CODES.VALIDATION_FAILED, "Semantic suggestions can only be staged for an import awaiting human review.");
+      }
+      const updated = await this.#commitJobPatch(
+        job,
+        {
+          semanticAgentSuggestions: cloneValue(suggestions),
+          semanticSuggestionHash: canonicalHash(suggestions),
+        },
+        { expectedPhase: "review_required" },
+      );
+      this.#emit({
+        type: "import.semantic_suggestions_changed",
+        jobId,
+        caseId: job.caseId,
+        importVersion: updated.version,
+        suggestionCount: suggestions.length,
+      });
+      return updated;
+    });
+  }
+
   async acceptImportAsNewCase(jobId, options) {
     return this.#serializeJob(jobId, async () => {
     const job = await this.#store.getJob(jobId);
