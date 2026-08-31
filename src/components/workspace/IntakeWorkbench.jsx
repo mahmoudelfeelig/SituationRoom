@@ -78,6 +78,102 @@ function ReviewPager({ label, items, pageSize, renderItem, empty = "No entries."
   );
 }
 
+function anchorLabel(anchor) {
+  if (!anchor) return "Unanchored";
+  const locator = anchor.locator ?? {};
+  const location = locator.range
+    ?? (locator.page ? `page ${locator.page}` : null)
+    ?? (locator.paragraph ? `paragraph ${locator.paragraph}` : null)
+    ?? locator.jsonPointer
+    ?? locator.xpath
+    ?? anchor.fragmentId;
+  return `${anchor.documentId} · ${location}`;
+}
+
+function SemanticIntakeReview({ proposal }) {
+  if (!proposal) return null;
+  const agentProposals = proposal.agentSuggestionReview?.proposed ?? [];
+  const rejectedSuggestions = proposal.agentSuggestionReview?.rejected ?? [];
+  const entityLabels = new Map(proposal.entities.map((entity) => [entity.id, entity.canonicalLabel]));
+  return (
+    <section className="os-semantic-intake-review" aria-labelledby="semantic-intake-heading">
+      <header>
+        <div><span className="os-eyebrow">Cross-document semantic room</span><h4 id="semantic-intake-heading">Identity, field, and conflict review</h4></div>
+        <p>Deterministic evidence stays authoritative. Browser-agent suggestions are quarantined beside it and never overwrite a mapping or merge an identity on their own.</p>
+      </header>
+      <dl className="os-semantic-summary">
+        <div><dt>Resolved entities</dt><dd>{proposal.summary.entities}</dd></div>
+        <div><dt>Field mappings</dt><dd>{proposal.summary.mappings}</dd></div>
+        <div className={proposal.summary.conflicts ? "has-warning" : ""}><dt>Conflicts</dt><dd>{proposal.summary.conflicts}</dd></div>
+        <div><dt>Unresolved</dt><dd>{proposal.summary.unresolved}</dd></div>
+        <div><dt>Agent proposals</dt><dd>{proposal.summary.agentProposals}</dd></div>
+        <div><dt>Overall confidence</dt><dd>{Math.round((proposal.confidence.overall ?? 0) * 100)}%</dd></div>
+      </dl>
+      <div className="os-semantic-ledgers">
+        <section>
+          <h5>Entity resolution</h5>
+          <ReviewPager
+            label="Resolved semantic entities"
+            items={proposal.entities}
+            pageSize={12}
+            renderItem={(entity) => (
+              <li key={entity.id}>
+                <strong>{entity.canonicalLabel}</strong>
+                <span>{entity.aliases.join(" · ")}</span>
+                <small>{entity.documentIds.length} source {entity.documentIds.length === 1 ? "document" : "documents"} · {Math.round(entity.confidence * 100)}% confidence · {entity.status}</small>
+              </li>
+            )}
+            empty="No stable cross-document identity could be inferred."
+          />
+        </section>
+        <section>
+          <h5>Deterministic field mappings</h5>
+          <ReviewPager
+            label="Deterministic semantic field mappings"
+            items={proposal.mappings}
+            pageSize={16}
+            renderItem={(mapping) => (
+              <li key={mapping.id} className={`status-${mapping.status}`}>
+                <strong>{mapping.sourceFields.join(" · ")} → {mapping.targetCriterion}</strong>
+                <span>{mapping.status} · {Math.round(mapping.confidence * 100)}% confidence</span>
+                <small>{mapping.sourceAnchors.slice(0, 2).map(anchorLabel).join(" / ")}</small>
+              </li>
+            )}
+            empty="No anchored field mapping was safe to propose."
+          />
+        </section>
+        <section>
+          <h5>Conflicts and unresolved evidence</h5>
+          <ReviewPager
+            label="Semantic conflicts and unresolved evidence"
+            items={[
+              ...proposal.conflicts.map((item) => ({ ...item, reviewKind: "conflict" })),
+              ...proposal.unresolved.map((item) => ({ ...item, reviewKind: "unresolved" })),
+            ]}
+            pageSize={16}
+            renderItem={(item, index) => (
+              <li key={item.id ?? `${item.code}:${item.fragmentId ?? item.recordRef ?? index}`} className="has-warning">
+                <strong>{item.reviewKind === "conflict" ? `${entityLabels.get(item.entityId) ?? item.entityId} · ${item.normalizedField}` : item.code}</strong>
+                <span>{item.message ?? `${item.values?.length ?? 0} incompatible values remain visible.`}</span>
+                <small>{(item.sourceAnchors ?? item.values?.flatMap((value) => value.sourceAnchors) ?? []).slice(0, 2).map(anchorLabel).join(" / ") || "Human interpretation required"}</small>
+              </li>
+            )}
+            empty="No conflicts or unresolved anchored evidence."
+          />
+        </section>
+      </div>
+      <details className="os-semantic-agent-review" open={agentProposals.length > 0 || rejectedSuggestions.length > 0}>
+        <summary>Browser-agent semantic proposals · {agentProposals.length} reviewable · {rejectedSuggestions.length} rejected</summary>
+        <div>
+          <section><h5>Review-only proposals</h5><ol>{agentProposals.length ? agentProposals.map((item) => <li key={item.id}><strong>{item.kind === "field-mapping" ? `${item.sourceField} → ${item.targetCriterion}` : item.aliases.join(" ↔ ")}</strong><span>{Math.round(item.confidence * 100)}% confidence · {item.wouldOverride ? "would differ from deterministic mapping" : "does not replace deterministic evidence"}</span><small>{item.sourceAnchors.map(anchorLabel).join(" / ")}</small></li>) : <li>No agent proposal has passed validation.</li>}</ol></section>
+          <section><h5>Rejected suggestions</h5><ol>{rejectedSuggestions.length ? rejectedSuggestions.map((item, index) => <li key={`${item.id ?? "rejected"}:${index}`}><strong>{item.code}</strong><span>{item.message}</span></li>) : <li>No rejected suggestions.</li>}</ol></section>
+        </div>
+      </details>
+      {(proposal.conflicts.length || proposal.resolutionProposals.length || agentProposals.length) ? <p className="os-semantic-resolution-route">These items remain advisory or unresolved in the draft. Commit only after reviewing every anchor, then resolve accepted interpretations in the typed Model before activation.</p> : null}
+    </section>
+  );
+}
+
 export function IntakeWorkbench({ room }) {
   const inputRef = useRef(null);
   const phaseFocusRef = useRef(null);
@@ -415,10 +511,11 @@ export function IntakeWorkbench({ room }) {
               </dl>
             </section>
           </div>
+          <SemanticIntakeReview proposal={review.semanticProposal} />
           {review.proposal.warnings.length ? <div className="os-review-warnings"><IconAlertTriangle size={18} /><ul>{review.proposal.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></div> : null}
           <label className="os-confirmation-check">
             <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-            <span>I reviewed the complete paginated alternatives, typed criteria, scoring directions and ranges, gates, evidence statuses, exact anchors, authority, and diagnostics. Commit this as a draft for typed editing; do not activate it yet.</span>
+            <span>I reviewed the complete paginated alternatives, typed criteria, scoring directions and ranges, gates, evidence statuses, exact anchors, semantic identities, unresolved conflicts, quarantined agent proposals, authority, and diagnostics. Commit this as a draft for typed editing; do not activate it yet.</span>
           </label>
           <p className="os-field-note"><IconTable size={17} /> Text fields remain informational until an explicit deterministic rule is confirmed. Missing cells remain unknown, never zero.</p>
           {error ? <p className="os-error-message" role="alert">{error}</p> : null}
