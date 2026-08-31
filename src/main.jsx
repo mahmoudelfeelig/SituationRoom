@@ -27,6 +27,7 @@ import {
   hasPendingHumanCheckpoint,
   initializeWorkspace,
   prepareCaseExport,
+  recordAgentActivity,
   reserveAgentImportCaseId,
   resolveStagedSource,
   setWebMcpStatus,
@@ -145,6 +146,7 @@ async function bootstrapSituationRoom() {
         sharedAuthorityAvailable: authority.sharedAuthorityAvailable,
         governedAgentMutationsBlocked: !authority.sharedAuthorityAvailable,
         pendingHumanCheckpoint: authority.pendingHumanCheckpoint || hasPendingHumanCheckpoint(),
+        pendingHumanAuthorityCheckpoint: authority.pendingHumanAuthorityCheckpoint,
         governanceVersion: authority.governanceVersion,
         stagedSourceCount: room.stagedSourceCount,
         viewRevision: room.viewRevision,
@@ -159,6 +161,7 @@ async function bootstrapSituationRoom() {
     actor: { id: "browser-agent", type: "agent", label: "Browser agent" },
     onStatus: setWebMcpStatus,
     onReceipt: addExternalReceipt,
+    onActivity: recordAgentActivity,
     invocationStore: new IndexedDbInvocationStore(),
     receiptLedger: new IndexedDbReceiptLedger(),
   });
