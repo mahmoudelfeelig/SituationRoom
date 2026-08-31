@@ -23,6 +23,7 @@ import {
 } from "@tabler/icons-react";
 import { CompiledRoomView } from "./components/composer/index.js";
 import { IntakeWorkbench } from "./components/workspace/IntakeWorkbench.jsx";
+import { AgentActivityRibbon } from "./components/workspace/AgentActivityRibbon.jsx";
 import { ModalSurface } from "./components/workspace/ModalSurface.jsx";
 import { UniversalFirewall } from "./components/workspace/UniversalFirewall.jsx";
 import { WorkspaceOverlays } from "./components/workspace/WorkspaceOverlays.jsx";
@@ -184,10 +185,10 @@ function QuestionComposer({ room, domain, draft, setDraft, asking, ask, onSubmit
     <section className="os-question-rail" aria-labelledby="decision-question-label">
       <IconSearch size={21} aria-hidden="true" />
       <form onSubmit={onSubmit}>
-        <label id="decision-question-label" htmlFor="decision-question">Recompose the active view</label>
+        <label id="decision-question-label" htmlFor="decision-question">Manual view shortcut</label>
         <input
           id="decision-question"
-          aria-label="Ask the room to investigate, compare, simulate, or brief"
+          aria-label="Manually recompose the room to investigate, compare, simulate, or brief"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           maxLength={240}
@@ -195,7 +196,7 @@ function QuestionComposer({ room, domain, draft, setDraft, asking, ask, onSubmit
         />
         <button className="os-ask-button" type="submit" aria-label="Rebuild room" disabled={asking || room.frozen || !draft.trim()}>
           {asking ? <IconSparkles className="is-spinning" size={19} /> : <IconSend size={19} />}
-          {asking ? "Compiling" : "Rebuild view"}
+          {asking ? "Compiling" : "Manual rebuild"}
         </button>
       </form>
       <details className="os-question-prompts">
@@ -498,11 +499,12 @@ export function App() {
             {actionError ? <div className="os-inline-error" role="alert">{actionError}</div> : null}
             {analysisVisible ? (
               <>
+                <AgentActivityRibbon room={room} domain={domain} />
                 <QuestionComposer room={room} domain={domain} draft={draft} setDraft={setDraft} asking={asking} ask={ask} onSubmit={handleSubmit} />
                 {room.compositionPhase !== "idle" ? (
                   <div className={`os-composition-strip phase-${room.compositionPhase}`} role="status">
                     <span className="os-composition-pulse"><IconBolt size={18} /></span>
-                    <div><span className="os-eyebrow">Live interface compiler</span><strong>{room.compositionMessage}</strong></div>
+                    <div><span className="os-eyebrow">Deterministic view compiler</span><strong>{room.compositionMessage}</strong></div>
                     <button type="button" onClick={cancelComposition}>{room.compositionPhase === "rejected" ? "Keep previous room" : "Cancel"}</button>
                   </div>
                 ) : null}
