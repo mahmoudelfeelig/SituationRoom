@@ -438,6 +438,13 @@ test("a pending import review overrides a stale case URL and remains visible aft
   await openRoom(page);
   const dialog = await openSmallGenericImportReview(page, "Hydrated import checkpoint");
   await expect(dialog.getByRole("heading", { name: "Decision Contract" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Identity, field, and conflict review" })).toBeVisible();
+  await expect(dialog.getByText("Deterministic evidence stays authoritative.")).toBeVisible();
+  await expect(dialog.getByRole("list", { name: "Deterministic semantic field mappings" })).toContainText(
+    "No anchored field mapping was safe to propose.",
+  );
+  expect(await dialog.locator(".os-semantic-intake-review > header p").evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
+  expect(await dialog.locator(".os-semantic-summary dt").first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
   expect((await roomState(page)).activeImportReview).not.toBeNull();
 
   await page.evaluate(() => {
@@ -451,6 +458,29 @@ test("a pending import review overrides a stale case URL and remains visible aft
   await expect(restored.getByRole("heading", { name: "Decision Contract" })).toBeVisible();
   expect((await roomState(page)).activeImportReview).not.toBeNull();
   await expect(page).toHaveURL(/\/new$/);
+});
+
+test("decision playback separates canonical history from view-only recomposition", async ({ page }) => {
+  await openRoom(page);
+  const before = await roomState(page);
+  await page.locator("#decision-question").fill("Compare verified cost and delivery risk without changing the decision.");
+  await page.locator(".os-ask-button").click();
+  await waitForRoom(page);
+  expect((await roomState(page)).decisionRevision).toBe(before.decisionRevision);
+  expect((await roomState(page)).viewRevision).toBe(before.viewRevision + 1);
+
+  await clickRoomControl(page, "Decision ledger");
+  const ledger = page.getByRole("dialog", { name: "Decision playback and tool ledger" });
+  await expect(ledger.getByRole("heading", { name: "Trace what changed and why" })).toBeVisible();
+  await expect(ledger.getByRole("heading", { name: "Codex Site-tools acceptance console" })).toBeVisible();
+  await expect(ledger.getByRole("list", { name: "Ordered decision history" })).toContainText("presentation committed");
+  await expect(ledger.getByText("View only", { exact: true })).toBeVisible();
+  expect(await ledger.locator(".os-playback-heading p").evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
+  expect(await ledger.locator(".os-playback-track small").first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
+  expect(await ledger.locator(".os-model-eval > header p").evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
+  expect(await ledger.locator(".os-model-eval__setup dt").first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
+  await ledger.getByRole("button", { name: /Compare/ }).click();
+  await expect(ledger.getByRole("heading", { name: "Compare two receipts" })).toBeVisible();
 });
 
 test("a large standard CSV exposes complete paginated review and commits only a draft", async ({ page }) => {

@@ -273,6 +273,19 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(afterCompose.viewHash).not.toBe(initial.viewHash);
   expect(afterCompose.lens).toBe("compare");
   await expect(page.locator(".os-header-ledger")).toContainText(`v${afterCompose.viewRevision}`);
+  await expect(page.locator(".os-agent-wire")).toBeVisible();
+  await expect(page.getByRole("list", { name: "Recent browser-agent tool activity" })).toContainText("compose decision room");
+  const liveActivity = await page.evaluate(() => window.__situationRoom.getState().agentActivity);
+  expect(liveActivity.lastDiff).toMatchObject({ decisionChanged: false, viewChanged: true });
+  expect(liveActivity.steps.at(-1).argumentKeys).toEqual(expect.arrayContaining([
+    "caseId",
+    "lens",
+    "layoutId",
+    "expectedDecisionRevision",
+    "expectedViewRevision",
+    "idempotencyKey",
+  ]));
+  expect(JSON.stringify(liveActivity)).not.toContain("Keep protected constraints and cited trade-offs visible.");
 
   await expect.poll(async () => toolNames(page)).toContain("evaluate_alternatives");
   const compareTools = await discover(page);
@@ -812,6 +825,7 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
     const review = window.__situationRoom.getState().activeImportReview;
     return {
       jobId: review.job.id,
+      importVersion: review.job.version,
       caseId: review.caseId,
       criteria: review.proposal.caseInput.criteria.map((entry) => entry.label),
       alternatives: review.proposal.caseInput.alternatives.map((entry) => entry.label),
@@ -834,6 +848,23 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
   });
   expect(sourceProjection.redactedAnchor).toBeTruthy();
   expect(sourceProjection.safeAnchor).toBeTruthy();
+  await expect.poll(async () => toolNames(page)).toContain("propose_semantic_mapping");
+  const semanticProposal = await executeTool(page, "propose_semantic_mapping", {
+    jobId: beforeReload.jobId,
+    suggestions: [{
+      id: "candidate-typescript-semantic",
+      kind: "field-mapping",
+      sourceField: "typescript_years",
+      targetCriterion: "Verified TypeScript experience",
+      confidence: 0.94,
+      sourceRefs: [{ documentId: sourceProjection.documentId, fragmentId: sourceProjection.safeAnchor }],
+    }],
+    expectedImportVersion: beforeReload.importVersion,
+    idempotencyKey: "browser-candidate-semantic-0001",
+  });
+  expect(semanticProposal.parsed.ok).toBe(true);
+  expect(semanticProposal.parsed.data).toMatchObject({ suggestionCount: 1, awaitingHuman: true });
+  await expect(dialog.getByText("typescript_years → Verified TypeScript experience")).toBeVisible();
   await expect.poll(async () => toolNames(page)).toContain("inspect_document");
   const { documentId } = sourceProjection;
   const inspected = await executeTool(page, "inspect_document", {
