@@ -20,6 +20,8 @@ import {
   togglePin,
   toggleSourceDrawer,
 } from "../../workspace/workspaceStore.js";
+import { DecisionPlayback } from "./DecisionPlayback.jsx";
+import { WebMcpEvaluationConsole } from "./WebMcpEvaluationConsole.jsx";
 import { ModalSurface } from "./ModalSurface.jsx";
 
 function humanize(value) {
@@ -131,25 +133,31 @@ export function AccessibleOutline({ room }) {
 export function AuditLedger({ room }) {
   const receipts = room.receipts;
   return (
-    <ModalSurface open={room.auditOpen} title="Revision and tool ledger" eyebrow="Append-only local receipts" onClose={() => toggleAudit(false)} size="large">
+    <ModalSurface open={room.auditOpen} title="Decision playback and tool ledger" eyebrow="Append-only receipts · canonical and presentation history separated" onClose={() => toggleAudit(false)} size="large">
       <div className="os-audit-summary">
         <div><IconFingerprint size={19} /><span>Decision digest</span><code>{room.activeCase ? getDecisionHash(room.activeCase) : "Unavailable"}</code></div>
         <div><IconHistory size={19} /><span>Decision / view</span><strong>{room.activeCase?.revision ?? 0} / {room.viewRevision}</strong></div>
       </div>
-      <ol className="os-receipt-ledger">
-        {receipts.map((receipt) => (
-          <li key={receipt.id}>
-            <span className={`os-receipt-status status-${receipt.status ?? "committed"}`}><IconCheck size={15} /> {receipt.status ?? "committed"}</span>
-            <div><strong>{humanize(receipt.type ?? receipt.commandType)}</strong><span>{receipt.source ? `${receipt.source} · ` : ""}{formatTimestamp(receipt.at)}</span></div>
-            <dl>
-              {receipt.revisionBefore !== undefined ? <div><dt>Decision</dt><dd>{receipt.revisionBefore ?? "new"} → {receipt.revisionAfter}</dd></div> : null}
-              {receipt.viewRevisionBefore !== undefined ? <div><dt>View</dt><dd>{receipt.viewRevisionBefore} → {receipt.viewRevisionAfter}</dd></div> : null}
-              <div><dt>Receipt</dt><dd>{receipt.id.slice(0, 20)}</dd></div>
-            </dl>
-          </li>
-        ))}
-      </ol>
-      {!receipts.length ? <p className="os-empty-state">No workspace receipts have been recorded for this case. Seed-case creation remains in the canonical case audit.</p> : null}
+      <WebMcpEvaluationConsole room={room} />
+      <DecisionPlayback receipts={receipts} activeCaseId={room.activeCase?.id} />
+      {receipts.length ? (
+        <details className="os-raw-receipts">
+          <summary>Inspect raw append-only receipts</summary>
+          <ol className="os-receipt-ledger">
+            {receipts.map((receipt) => (
+              <li key={receipt.id}>
+                <span className={`os-receipt-status status-${receipt.status ?? "committed"}`}><IconCheck size={15} /> {receipt.status ?? "committed"}</span>
+                <div><strong>{humanize(receipt.type ?? receipt.commandType ?? receipt.tool)}</strong><span>{receipt.source ? `${receipt.source} · ` : ""}{formatTimestamp(receipt.at)}</span></div>
+                <dl>
+                  {receipt.revisionBefore !== undefined ? <div><dt>Decision</dt><dd>{receipt.revisionBefore ?? "new"} → {receipt.revisionAfter}</dd></div> : null}
+                  {receipt.viewRevisionBefore !== undefined ? <div><dt>View</dt><dd>{receipt.viewRevisionBefore} → {receipt.viewRevisionAfter}</dd></div> : null}
+                  <div><dt>Receipt</dt><dd>{receipt.id.slice(0, 20)}</dd></div>
+                </dl>
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
     </ModalSurface>
   );
 }
