@@ -1,5 +1,13 @@
 import { IconArrowRight } from "@tabler/icons-react";
 
+export function instrumentTransitionStyle(instrument) {
+  const semanticName = String(instrument?.type ?? instrument?.id ?? "instrument")
+    .toLowerCase()
+    .replaceAll(/[^a-z0-9_-]+/g, "-")
+    .replaceAll(/^-+|-+$/g, "") || "instrument";
+  return { viewTransitionName: `instrument-${semanticName}` };
+}
+
 export function CompiledViewHeading({ plan, headingId, kicker }) {
   return (
     <header className="compiled-view-heading">
@@ -17,7 +25,12 @@ export function InstrumentRegion({ label, region, instruments, renderInstrument,
   return (
     <section className={`compiled-instrument-region region-${region} ${className}`.trim()} aria-label={label}>
       {instruments.map((instrument) => (
-        <div className="compiled-instrument-slot" key={instrument.id} data-slot-instrument={instrument.id}>
+        <div
+          className="compiled-instrument-slot"
+          key={instrument.id}
+          data-slot-instrument={instrument.id}
+          style={instrumentTransitionStyle(instrument)}
+        >
           {renderInstrument(instrument)}
         </div>
       ))}
@@ -37,4 +50,3 @@ export function ThreadConnector({ label = "Leads to the next canonical decision 
 export function instrumentsInRegion(plan, region) {
   return plan.instruments.filter((instrument) => instrument.region === region);
 }
-

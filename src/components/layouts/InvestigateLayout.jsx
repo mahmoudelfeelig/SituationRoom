@@ -1,4 +1,10 @@
-import { CompiledViewHeading, InstrumentRegion, ThreadConnector, instrumentsInRegion } from "./LayoutPrimitives.jsx";
+import {
+  CompiledViewHeading,
+  InstrumentRegion,
+  ThreadConnector,
+  instrumentsInRegion,
+  instrumentTransitionStyle,
+} from "./LayoutPrimitives.jsx";
 
 export function InvestigateLayout({ plan, headingId, renderInstrument }) {
   const primary = instrumentsInRegion(plan, "primary");
@@ -10,7 +16,7 @@ export function InvestigateLayout({ plan, headingId, renderInstrument }) {
       <section className="compiled-primary-trace" aria-label="Source-to-outcome causal path">
         {primary.map((instrument, index) => (
           <div className="compiled-trace-step" key={instrument.id}>
-            <div className="compiled-instrument-slot">{renderInstrument(instrument)}</div>
+            <div className="compiled-instrument-slot" style={instrumentTransitionStyle(instrument)}>{renderInstrument(instrument)}</div>
             {index < primary.length - 1 ? <ThreadConnector /> : null}
           </div>
         ))}
@@ -20,4 +26,3 @@ export function InvestigateLayout({ plan, headingId, renderInstrument }) {
     </section>
   );
 }
-
