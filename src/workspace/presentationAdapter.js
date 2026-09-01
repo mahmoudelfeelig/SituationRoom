@@ -46,6 +46,93 @@ function presentationDomainKind(packId) {
   return packId || "generic";
 }
 
+function scenarioEvaluationSummary(decisionCase, evaluation, scenarioResult) {
+  const stagedEvaluation = scenarioResult?.evaluation;
+  if (!stagedEvaluation) return null;
+
+  const scenario = scenarioResult.scenario
+    ?? decisionCase.scenarios.find((entry) => entry.id === scenarioResult.scenarioId)
+    ?? null;
+  const alternativeById = new Map(decisionCase.alternatives.map((entry) => [entry.id, entry]));
+  const criterionById = new Map(decisionCase.criteria.map((entry) => [entry.id, entry]));
+  const claimById = new Map(decisionCase.claims.map((entry) => [entry.id, entry]));
+  const baseResultByAlternative = new Map((evaluation?.results ?? []).map((entry) => [entry.alternativeId, entry]));
+  const stagedResultByAlternative = new Map((stagedEvaluation.results ?? []).map((entry) => [entry.alternativeId, entry]));
+
+  const changes = Object.entries(scenario?.claimOverrides ?? {}).flatMap(([claimId, requestedValue]) => {
+    const claim = claimById.get(claimId);
+    if (!claim) return [];
+    const baseResult = baseResultByAlternative.get(claim.subjectId);
+    const stagedResult = stagedResultByAlternative.get(claim.subjectId);
+    const baseCriterion = baseResult?.criteria?.find((entry) => entry.criterionId === claim.criterionId);
+    const stagedCriterion = stagedResult?.criteria?.find((entry) => entry.criterionId === claim.criterionId);
+    const criterion = stagedCriterion?.criterion ?? baseCriterion?.criterion ?? criterionById.get(claim.criterionId);
+    const alternative = stagedResult?.alternative ?? baseResult?.alternative ?? alternativeById.get(claim.subjectId);
+    const baselineValue = baseCriterion?.measurement?.value ?? claim.value;
+    const scenarioValue = stagedCriterion?.measurement?.value ?? requestedValue;
+    const stagedConstraint = stagedCriterion?.constraints?.find((entry) => entry.constraint?.severity === "mandatory" && entry.status === "fail")
+      ?? stagedCriterion?.constraints?.find((entry) => entry.constraint?.severity === "mandatory")
+      ?? null;
+    const baseConstraint = stagedConstraint
+      ? baseCriterion?.constraints?.find((entry) => entry.constraint?.id === stagedConstraint.constraint?.id) ?? null
+      : null;
+    return [{
+      claimId,
+      alternativeId: claim.subjectId,
+      alternativeLabel: alternative?.label ?? claim.subjectId,
+      criterionId: claim.criterionId,
+      criterionLabel: criterion?.label ?? claim.criterionId,
+      baselineValue,
+      baselineFormattedValue: formatValue(baselineValue, criterion, decisionCase),
+      scenarioValue,
+      scenarioFormattedValue: formatValue(scenarioValue, criterion, decisionCase),
+      baselineStatus: baseCriterion?.status ?? "unknown",
+      scenarioStatus: stagedCriterion?.status ?? "unknown",
+      constraint: stagedConstraint
+        ? {
+            id: stagedConstraint.constraint?.id ?? null,
+            label: stagedConstraint.constraint?.label ?? criterion?.label ?? claim.criterionId,
+            operator: stagedConstraint.constraint?.operator ?? null,
+            expected: stagedConstraint.expected,
+            expectedFormattedValue: formatValue(stagedConstraint.expected, criterion, decisionCase),
+            actual: stagedConstraint.actual,
+            actualFormattedValue: formatValue(stagedConstraint.actual, criterion, decisionCase),
+            severity: stagedConstraint.constraint?.severity ?? null,
+            baselineStatus: baseConstraint?.status ?? baseCriterion?.status ?? "unknown",
+            scenarioStatus: stagedConstraint.status ?? stagedCriterion?.status ?? "unknown",
+          }
+        : null,
+    }];
+  });
+
+  const eligibleAlternativeCount = (stagedEvaluation.results ?? []).filter((entry) => entry.eligible).length;
+  const baseBlockerCount = evaluation?.blockerCount ?? 0;
+  const blockerCount = stagedEvaluation.blockerCount ?? 0;
+  return {
+    scenarioId: scenario?.id ?? null,
+    scenarioLabel: scenario?.label ?? "Active scenario",
+    scenarioDescription: scenario?.description ?? "A hypothetical branch evaluated against the declared decision contract.",
+    outcomeLabel: eligibleAlternativeCount === 0
+      ? "No eligible alternative"
+      : `${eligibleAlternativeCount} eligible ${eligibleAlternativeCount === 1 ? "alternative" : "alternatives"}`,
+    eligibleAlternativeCount,
+    recommendation: stagedEvaluation.recommendation
+      ? {
+          alternativeId: stagedEvaluation.recommendation.alternativeId,
+          label: stagedEvaluation.recommendation.alternative.label,
+          score: stagedEvaluation.recommendation.score,
+          eligible: stagedEvaluation.recommendation.eligible,
+        }
+      : null,
+    baseBlockerCount,
+    blockerCount,
+    blockerDelta: blockerCount - baseBlockerCount,
+    unresolvedCount: stagedEvaluation.unresolvedCount,
+    changes,
+    originalDecisionUnchanged: scenarioResult.originalDecisionUnchanged === true,
+  };
+}
+
 export function toPresentationSnapshot(decisionCase, evaluation, presentation = {}) {
   if (!decisionCase) return null;
   const candidateReview = decisionCase.domain.packId === "candidate-review";
@@ -261,6 +348,9 @@ export function toPresentationSnapshot(decisionCase, evaluation, presentation = 
         score: evaluation.recommendation.score,
       }
     : null;
+  const scenarioSummary = !candidateReview
+    ? scenarioEvaluationSummary(decisionCase, evaluation, presentation.scenarioResult)
+    : null;
 
   return {
     schemaVersion: "1.0",
@@ -368,21 +458,7 @@ export function toPresentationSnapshot(decisionCase, evaluation, presentation = 
       })),
       activeScenario: presentation.activeScenario ?? null,
       activeScenarioId: presentation.activeScenario ?? null,
-      scenarioEvaluation: !candidateReview && presentation.scenarioResult?.evaluation
-        ? {
-            recommendation: presentation.scenarioResult.evaluation.recommendation
-              ? {
-                  alternativeId: presentation.scenarioResult.evaluation.recommendation.alternativeId,
-                  label: presentation.scenarioResult.evaluation.recommendation.alternative.label,
-                  score: presentation.scenarioResult.evaluation.recommendation.score,
-                  eligible: presentation.scenarioResult.evaluation.recommendation.eligible,
-                }
-              : null,
-            blockerCount: presentation.scenarioResult.evaluation.blockerCount,
-            unresolvedCount: presentation.scenarioResult.evaluation.unresolvedCount,
-            originalDecisionUnchanged: presentation.scenarioResult.originalDecisionUnchanged === true,
-          }
-        : null,
+      scenarioEvaluation: scenarioSummary,
     },
   };
 }

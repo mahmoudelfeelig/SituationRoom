@@ -5,6 +5,15 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
 
 import {
+  createGenericFixture,
+  createProcurementFixture,
+  genericPack,
+  procurementPack,
+} from "../src/domain-packs/index.js";
+import { evaluateScenario, evaluateWithDomainPack } from "../src/kernel/index.js";
+import { toPresentationSnapshot } from "../src/workspace/presentationAdapter.js";
+
+import {
   compilePresentation,
   createDefaultPresentationRecipe,
   TRUSTED_INSTRUMENT_TYPES,
@@ -104,7 +113,7 @@ test("the registry and renderer expose the same complete trusted instrument set"
   }
 });
 
-test("scenario instruments expose adapter-declared scenarios when no parameter controls exist", async () => {
+test("scenario instruments expose declared controls and truthful hypothetical results", async () => {
   const server = await createServer({
     configFile: "vite.config.mjs",
     server: { middlewareMode: true },
@@ -126,6 +135,89 @@ test("scenario instruments expose adapter-declared scenarios when no parameter c
     assert.match(html, /Low-risk case/);
     assert.match(html, /Run scenario/);
     assert.match(html, /aria-pressed="false"/);
+
+    {
+      const decisionCase = createProcurementFixture();
+      const evaluation = evaluateWithDomainPack(decisionCase, procurementPack);
+      const awaitingSnapshot = toPresentationSnapshot(decisionCase, evaluation, { viewRevision: 2 });
+      const awaitingPlan = compilePresentation(
+        awaitingSnapshot,
+        createDefaultPresentationRecipe(awaitingSnapshot, { lens: "simulate" }),
+      );
+      assert.equal(awaitingPlan.ok, true, awaitingPlan.errors?.join("\n"));
+      const awaitingHtml = renderToStaticMarkup(React.createElement(CompiledRoomView, {
+        snapshot: awaitingSnapshot,
+        plan: awaitingPlan.plan,
+      }));
+      assert.match(awaitingHtml, /Awaiting scenario/);
+      assert.match(awaitingHtml, /Run a scenario to calculate this branch/);
+
+      const scenarioResult = evaluateScenario(decisionCase, "procurement-scenario:deployment-delay", procurementPack);
+      const scenarioSnapshot = toPresentationSnapshot(decisionCase, evaluation, {
+        viewRevision: 2,
+        activeScenario: scenarioResult.scenario.id,
+        scenarioResult,
+      });
+      const canonicalDeployment = scenarioSnapshot.results.find((entry) => entry.subjectId === "vendor-a" && entry.criterionId === "r3");
+      assert.equal(canonicalDeployment.value, 10);
+      assert.equal(canonicalDeployment.status, "pass");
+      assert.equal(scenarioSnapshot.domainData.scenarioEvaluation.changes[0].scenarioValue, 13);
+      assert.equal(scenarioSnapshot.domainData.scenarioEvaluation.changes[0].constraint.expected, 12);
+      assert.equal(scenarioSnapshot.domainData.scenarioEvaluation.changes[0].constraint.scenarioStatus, "fail");
+
+      const scenarioPlan = compilePresentation(
+        scenarioSnapshot,
+        createDefaultPresentationRecipe(scenarioSnapshot, { lens: "simulate" }),
+      );
+      assert.equal(scenarioPlan.ok, true, scenarioPlan.errors?.join("\n"));
+      const scenarioHtml = renderToStaticMarkup(React.createElement(CompiledRoomView, {
+        snapshot: scenarioSnapshot,
+        plan: scenarioPlan.plan,
+      }));
+      assert.equal((scenarioHtml.match(/Projected outcome · scenario only/g) ?? []).length, 1);
+      assert.match(scenarioHtml, /No eligible alternative/);
+      assert.match(scenarioHtml, /10 weeks/);
+      assert.match(scenarioHtml, /13 weeks/);
+      assert.match(scenarioHtml, /≤ 12 weeks/);
+      assert.match(scenarioHtml, /Top-ranked but blocked/);
+      assert.match(scenarioHtml, /Northstar Relay/);
+      assert.match(scenarioHtml, /Score 71/);
+      assert.match(scenarioHtml, /Revision 17 unchanged/);
+
+      const genericCase = createGenericFixture();
+      const genericEvaluation = evaluateWithDomainPack(genericCase, genericPack);
+      const genericScenarioResult = evaluateScenario(genericCase, "generic-scenario:field-battery", genericPack);
+      const genericScenarioSnapshot = toPresentationSnapshot(genericCase, genericEvaluation, {
+        viewRevision: 2,
+        activeScenario: genericScenarioResult.scenario.id,
+        scenarioResult: genericScenarioResult,
+      });
+      assert.equal(genericScenarioSnapshot.domainData.scenarioEvaluation.changes.length, 3);
+      const genericScenarioPlan = compilePresentation(
+        genericScenarioSnapshot,
+        createDefaultPresentationRecipe(genericScenarioSnapshot, { lens: "simulate" }),
+      );
+      assert.equal(genericScenarioPlan.ok, true, genericScenarioPlan.errors?.join("\n"));
+      const genericScenarioHtml = renderToStaticMarkup(React.createElement(CompiledRoomView, {
+        snapshot: genericScenarioSnapshot,
+        plan: genericScenarioPlan.plan,
+      }));
+      assert.match(genericScenarioHtml, /2 additional scenario inputs are included in this branch/);
+      assert.match(genericScenarioHtml, /Additional scenario inputs/);
+      assert.match(genericScenarioHtml, /Studio workstation/);
+      assert.match(genericScenarioHtml, /Lightweight workstation/);
+
+      const advisoryCase = structuredClone(createProcurementFixture());
+      advisoryCase.constraints.find((constraint) => constraint.id === "constraint:r3").severity = "advisory";
+      const advisoryEvaluation = evaluateWithDomainPack(advisoryCase, procurementPack);
+      const advisoryScenarioResult = evaluateScenario(advisoryCase, "procurement-scenario:deployment-delay", procurementPack);
+      const advisoryScenarioSnapshot = toPresentationSnapshot(advisoryCase, advisoryEvaluation, {
+        viewRevision: 2,
+        activeScenario: advisoryScenarioResult.scenario.id,
+        scenarioResult: advisoryScenarioResult,
+      });
+      assert.equal(advisoryScenarioSnapshot.domainData.scenarioEvaluation.changes[0].constraint, null);
+    }
   } finally {
     await server.close();
   }

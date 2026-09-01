@@ -224,7 +224,30 @@ test("default recipes compile into all four structural layout grammars", () => {
     assert.equal(result.plan.baseDecisionRevision, snapshot.decisionRevision);
     assert.match(result.plan.viewHash, /^sr-[a-f0-9]{8}$/);
     assert.ok(result.plan.instruments.length >= 3);
+    if (lens === "simulate") {
+      const outcomes = result.plan.instruments.filter((instrument) => instrument.type === "outcome-seal" && instrument.variant === "hypothetical");
+      assert.equal(outcomes.length, 1);
+      assert.equal(outcomes[0].variant, "hypothetical");
+      assert.equal(outcomes[0].systemInjected, true);
+      assert.equal(outcomes[0].locked, true);
+      assert.equal(outcomes[0].region, "secondary");
+      assert.equal(result.plan.regions.secondary.includes(outcomes[0].id), true);
+    }
   }
+
+  const defaultRecipe = createDefaultPresentationRecipe(snapshot, { lens: "simulate" });
+  const customRecipe = {
+    ...defaultRecipe,
+    recipeId: "custom-simulate-without-outcome",
+    instruments: defaultRecipe.instruments.filter((instrument) => instrument.type !== "outcome-seal"),
+  };
+
+  const customResult = compilePresentation(snapshot, customRecipe);
+  assert.equal(customResult.ok, true, customResult.errors?.join("\n"));
+  const customOutcomes = customResult.plan.instruments.filter((instrument) => instrument.type === "outcome-seal" && instrument.variant === "hypothetical");
+  assert.equal(customOutcomes.length, 1);
+  assert.equal(customOutcomes[0].systemInjected, true);
+  assert.equal(customOutcomes[0].locked, true);
 });
 
 test("the compiler injects protected constraints and pins beyond the agent recipe", () => {

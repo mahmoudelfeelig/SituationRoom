@@ -179,6 +179,7 @@ export function createPresentationRecipe(snapshot, question, options = {}) {
     priority: 100 - index * 10,
     entityRefs: refsForInstrument(type, refs, activePath),
     ...(type === "causal-trace" && activePath ? { pathId: activePath.id } : {}),
+    ...(type === "outcome-seal" && classification.lens === "simulate" ? { variant: "hypothetical" } : {}),
     options: optionsForInstrument(type),
   }));
   const focusReference = options.focusRef ?? activePath?.entityRefs?.at(-1) ?? refs.alternatives[0];

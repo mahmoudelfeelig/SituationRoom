@@ -433,16 +433,31 @@ export function compilePresentation(snapshot, recipe, environment = {}) {
       }),
     );
   }
+  const injectScenarioOutcome = recipe.lens === "simulate" && snapshot.permissions?.canSimulate !== false;
+  if (injectScenarioOutcome) {
+    systemInstruments.push(
+      systemInstrument("outcome-seal", [
+        ...allResultRefs(snapshot, 50),
+        ...refsForKinds(snapshot, ["alternative", "candidate", "plan", "vendor"], 50),
+      ].slice(0, 100), {
+        region: "secondary",
+        priority: 995,
+        variant: "hypothetical",
+      }),
+    );
+  }
 
   const budget = resolveBudget(snapshot, recipe, environment, systemInstruments.length);
   if (budget.error) return { ok: false, error: budget.error, errors: [budget.error] };
 
-  const requestedInstruments = recipe.instruments.map((instrument, index) => ({
-    ...clone(instrument),
-    systemInjected: false,
-    locked: false,
-    recipeOrder: index,
-  }));
+  const requestedInstruments = recipe.instruments
+    .filter((instrument) => !(injectScenarioOutcome && instrument.type === "outcome-seal" && instrument.variant === "hypothetical"))
+    .map((instrument, index) => ({
+      ...clone(instrument),
+      systemInjected: false,
+      locked: false,
+      recipeOrder: index,
+    }));
   const ranked = [...requestedInstruments].sort((left, right) => {
     if (right.priority !== left.priority) return right.priority - left.priority;
     return left.recipeOrder - right.recipeOrder;

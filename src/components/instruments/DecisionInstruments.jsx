@@ -36,6 +36,10 @@ function matchingResult(snapshot, item, instrument) {
   );
 }
 
+function operatorSymbol(operator) {
+  return ({ eq: "=", neq: "≠", lt: "<", lte: "≤", gt: ">", gte: "≥", in: "∈", contains: "contains" })[operator] ?? operator ?? "threshold";
+}
+
 export function ProtectedInvariantsInstrument({ snapshot, instrument, onAction }) {
   const constraints = referencedItems(snapshot, instrument);
   const blockerIds = new Set(instrument.blockerResultIds ?? snapshot.protected?.blockerResultIds ?? []);
@@ -128,20 +132,91 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
     ?? referencedItems(snapshot, instrument, ["alternative", "candidate", "plan", "vendor"])[0]?.item
     ?? null;
   const hypothetical = instrument.variant === "hypothetical";
-  const status = hypothetical ? "hypothetical" : result?.status ?? alternative?.status ?? "unknown";
+  const scenario = hypothetical ? snapshot.domainData?.scenarioEvaluation : null;
+  const status = scenario
+    ? scenario.eligibleAlternativeCount > 0 ? "pass" : "fail"
+    : hypothetical ? "hypothetical" : result?.status ?? alternative?.status ?? "unknown";
+  const scenarioChange = scenario?.changes?.[0] ?? null;
+  const additionalScenarioChanges = scenario?.changes?.slice(1, 4) ?? [];
+  const undisplayedScenarioChangeCount = Math.max(0, (scenario?.changes?.length ?? 0) - 4);
+  const scenarioConstraintChange = scenario?.changes?.find((change) => change.constraint) ?? null;
+  const scenarioConstraint = scenarioConstraintChange?.constraint ?? null;
+  const title = hypothetical
+    ? scenario?.scenarioLabel ?? "Scenario result"
+    : alternative ? titleFor(alternative) : "Outcome unresolved";
+  const summary = scenarioChange
+    ? `${scenarioChange.alternativeLabel} · ${scenarioChange.criterionLabel}: ${scenarioChange.baselineFormattedValue} to ${scenarioChange.scenarioFormattedValue}.${scenario.changes.length > 1 ? ` ${scenario.changes.length - 1} additional scenario ${scenario.changes.length === 2 ? "input is" : "inputs are"} included in this branch.` : ""}`
+    : hypothetical
+      ? "Run a scenario to calculate this branch without changing the canonical decision."
+      : result?.reason || alternative?.summary || "The available evidence does not support a final outcome.";
   return (
     <InstrumentFrame
       instrument={instrument}
       kicker={hypothetical ? "Projected outcome · scenario only" : "Canonical outcome"}
-      title={alternative ? titleFor(alternative) : "Outcome unresolved"}
+      title={title}
       status={status}
       className="outcome-seal-instrument"
     >
-      <div className={`outcome-seal tone-${normalizeStatus(status)}`}>
+      <div className={`outcome-seal tone-${normalizeStatus(status)}${scenario ? " is-scenario-branch" : ""}`}>
         {normalizeStatus(status) === "pass" ? <IconCheck size={30} aria-hidden="true" /> : normalizeStatus(status) === "fail" ? <IconCircleX size={30} aria-hidden="true" /> : <IconScale size={30} aria-hidden="true" />}
-        <strong>{String(status || "Unknown").replaceAll("-", " ")}</strong>
-        <span>{result?.reason || alternative?.summary || "The available evidence does not support a final outcome."}</span>
-        {result?.value !== undefined ? <output>{formatCanonicalValue(result.value, result.unit, snapshot.metadata?.locale)}</output> : null}
+        <strong>{scenario?.outcomeLabel ?? (hypothetical ? "Awaiting scenario" : String(status || "Unknown").replaceAll("-", " "))}</strong>
+        <span>{summary}</span>
+        {scenario ? (
+          <dl className="scenario-branch-ledger">
+            {scenarioChange ? (
+              <>
+                <div>
+                  <dt>Canonical</dt>
+                  <dd><strong>{scenarioChange.baselineFormattedValue}</strong><em className={`status-${normalizeStatus(scenarioChange.baselineStatus)}`}>{scenarioChange.baselineStatus}</em></dd>
+                </div>
+                <div>
+                  <dt>Hypothetical</dt>
+                  <dd><strong>{scenarioChange.scenarioFormattedValue}</strong><em className={`status-${normalizeStatus(scenarioChange.scenarioStatus)}`}>{scenarioChange.scenarioStatus}</em></dd>
+                </div>
+              </>
+            ) : null}
+            {scenarioConstraint ? (
+              <div className="scenario-branch-ledger__wide">
+                <dt>{scenarioConstraint.label} · mandatory gate</dt>
+                <dd>
+                  <strong>{operatorSymbol(scenarioConstraint.operator)} {scenarioConstraint.expectedFormattedValue}</strong>
+                  <em className={`status-${normalizeStatus(scenarioConstraint.scenarioStatus)}`}>{scenarioConstraint.scenarioStatus}</em>
+                </dd>
+              </div>
+            ) : null}
+            {additionalScenarioChanges.length > 0 ? (
+              <div className="scenario-branch-ledger__wide scenario-branch-ledger__changes">
+                <dt>Additional scenario inputs</dt>
+                <dd>
+                  <ul>
+                    {additionalScenarioChanges.map((change) => (
+                      <li key={change.claimId}>
+                        <strong>{change.alternativeLabel} · {change.criterionLabel}</strong>
+                        <span>{change.baselineFormattedValue} → {change.scenarioFormattedValue}</span>
+                        <em className={`status-${normalizeStatus(change.scenarioStatus)}`}>{change.scenarioStatus}</em>
+                      </li>
+                    ))}
+                  </ul>
+                  {undisplayedScenarioChangeCount > 0 ? <span>+{undisplayedScenarioChangeCount} more overrides included in this branch</span> : null}
+                </dd>
+              </div>
+            ) : null}
+            {scenario.recommendation ? (
+              <div className="scenario-branch-ledger__wide">
+                <dt>{scenario.recommendation.eligible ? "Top eligible alternative" : "Top-ranked but blocked"}</dt>
+                <dd><strong>{scenario.recommendation.label}</strong><span>Score {scenario.recommendation.score}</span></dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>Mandatory blockers</dt>
+              <dd><strong>{scenario.baseBlockerCount} → {scenario.blockerCount}</strong></dd>
+            </div>
+            <div>
+              <dt>Canonical record</dt>
+              <dd><strong>{scenario.originalDecisionUnchanged ? `Revision ${snapshot.decisionRevision} unchanged` : "Review required"}</strong></dd>
+            </div>
+          </dl>
+        ) : result?.value !== undefined && !hypothetical ? <output>{formatCanonicalValue(result.value, result.unit, snapshot.metadata?.locale)}</output> : null}
       </div>
       <p className="outcome-authority-note">
         <IconLock size={17} aria-hidden="true" />

@@ -309,6 +309,19 @@ test("all four room grammars recompose without changing the canonical decision",
     await followLens(page, name);
     await expect(page.locator(`[data-layout-pattern="${layout}"]`)).toBeVisible();
     await waitForRoom(page);
+    if (lens === "simulate") {
+      const control = page.locator(".scenario-control").filter({ hasText: "Deployment delay" }).first();
+      await control.locator('input[type="checkbox"]').click();
+      const branch = page.locator(".outcome-seal.is-scenario-branch");
+      await expect(branch).toHaveCount(1);
+      await expect(branch.getByText("No eligible alternative", { exact: true })).toBeVisible();
+      await expect(branch.getByText("10 weeks", { exact: true })).toBeVisible();
+      await expect(branch.getByText("13 weeks", { exact: true })).toBeVisible();
+      await expect(branch.getByText("≤ 12 weeks", { exact: true })).toBeVisible();
+      await expect(branch).toContainText("Top-ranked but blocked");
+      await expect(branch).toContainText("Northstar Relay");
+      await expect(branch).toContainText(`Revision ${before.decisionRevision} unchanged`);
+    }
     const current = await roomState(page);
     expect(current.lens).toBe(lens);
     expect(current.layout).toBe(layout);
