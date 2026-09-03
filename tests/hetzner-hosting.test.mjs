@@ -47,7 +47,7 @@ test("public route and document metadata describe the general Decision OS", asyn
   ]);
   assert.match(route, /situationroom\.elfeel\.me/);
   assert.match(route, /reverse_proxy situationroom-web:8080/);
-  assert.match(html, /Agent-Constructed Decision OS/);
+  assert.match(html, /SituationRoom · Evidence-backed decisions/);
   assert.doesNotMatch(html, /Procurement Decisions/);
   assert.match(vite, /stableOcrModelFile = "assets\/ocr\/4\.0\.0_best_int\/eng\.traineddata\.gz"/);
 });

@@ -57,7 +57,7 @@ export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Comp
     return (
       <td key={`${alternative.id}:${criterion.id}`} className={`tone-${normalizeStatus(result?.status)}`}>
         <StatusMark status={result?.status ?? "unknown"} />
-        <span>{result ? (result.reason || "Recorded value.") : "No result is available."}</span>
+        {result?.reason ? <span>{result.reason}</span> : !result ? <span>No information is available.</span> : null}
         {result?.value !== undefined ? (
           <strong>{formatCanonicalValue(result.value, result.unit, snapshot.metadata?.locale)}</strong>
         ) : null}
@@ -68,6 +68,7 @@ export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Comp
   return (
     <InstrumentFrame instrument={instrument} kicker="How the options compare" title={title}>
       <p className="sr-only" id={descriptionId}>This comparison may scroll horizontally. Every cell includes a text status and reason.</p>
+      <p className="comparison-scroll-hint" aria-hidden="true">Swipe sideways to compare every option</p>
       <div className="comparison-table-scroll" tabIndex="0" role="region" aria-label={title} aria-describedby={descriptionId}>
         <table className={`compiled-comparison-table ${transposed ? "is-transposed" : ""}`}>
           <caption className="sr-only">{title}</caption>
@@ -175,7 +176,7 @@ export function MetricWaterfallInstrument({ snapshot, instrument, title = "Metri
           </BoundedInstrumentRegion>
           <div className="waterfall-total waterfall-total--disclosure">
             <span>Values keep their original units so unlike measures are not mixed.</span>
-            <strong>No cross-metric total</strong>
+            <strong>Shown separately</strong>
           </div>
         </div>
       ) : <EmptyInstrumentState>No numeric results are linked to this view.</EmptyInstrumentState>}
@@ -297,13 +298,13 @@ export function CausalTraceInstrument({ snapshot, instrument, onAction }) {
     ? path.entityRefs.map((reference) => ({ reference, item: snapshot.entities?.find((entity) => entity.id === reference.id && entity.kind === reference.kind) || snapshot.sources?.find((source) => source.id === reference.id) })).filter(({ item }) => item)
     : referencedItems(snapshot, instrument);
   return (
-    <InstrumentFrame instrument={instrument} kicker="Red thread" title={path?.label || "Causal trace"} status={path?.status}>
+    <InstrumentFrame instrument={instrument} kicker="Evidence path" title={path?.label || "How the evidence leads here"} status={path?.status}>
       {items.length ? (
         <ol className="compact-causal-trace">
           {items.map(({ item, reference }, index) => (
             <li key={`${reference.kind}:${reference.id}`}>
               <button type="button" onClick={() => onAction?.({ type: "focus", instrumentId: instrument.id, entityRef: reference })}>
-                <span className="instrument-kicker">{reference.kind}</span><strong>{titleFor(item)}</strong><small>{summaryFor(item)}</small>
+                <span className="instrument-kicker">{reference.kind === "claim" ? "What we concluded" : reference.kind === "constraint" ? "Requirement" : reference.kind === "alternative" ? "Option" : reference.kind === "source" ? "Source" : "Evidence"}</span><strong>{titleFor(item)}</strong><small>{summaryFor(item)}</small>
               </button>
               {index < items.length - 1 ? <IconArrowRight size={20} aria-hidden="true" /> : null}
             </li>

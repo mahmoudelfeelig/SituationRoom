@@ -22,16 +22,41 @@ import {
 import { ModelEditor } from "./ModelEditor.jsx";
 
 const EXPORT_FORMATS = Object.freeze([
-  ["json", "Portable JSON"],
-  ["jsonld", "Linked-data JSON"],
-  ["csv", "Claims CSV"],
-  ["html", "Cited HTML"],
+  ["pdf", "PDF report"],
+  ["docx", "Word document"],
   ["xlsx", "Excel workbook"],
-  ["docx", "Word packet"],
-  ["pdf", "Print / PDF"],
+  ["csv", "Evidence spreadsheet"],
+  ["html", "Web page"],
+  ["json", "Structured data"],
+  ["jsonld", "Linked data"],
 ]);
 const REVIEW_PAGE_SIZE = 6;
 const OUTPUT_PAGE_SIZE = 4;
+
+const REVIEW_KIND_LABELS = Object.freeze({
+  comment: "Comment",
+  request_resolution: "Question to resolve",
+  branch_proposal: "Alternative proposal",
+  information_request: "Information request",
+  external_action_draft: "Draft action",
+  human_resolution_request: "Question needing a decision",
+  decision_proposeContract: "Suggested question and goal",
+  decision_upsertAlternative: "Suggested option",
+  decision_upsertCriterion: "Suggested criterion",
+  decision_upsertConstraint: "Suggested requirement",
+  decision_upsertClaim: "Suggested evidence value",
+});
+
+function reviewLabel(value) {
+  return REVIEW_KIND_LABELS[value] ?? String(value ?? "Review item")
+    .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+    .replaceAll(/[-_]/g, " ")
+    .replace(/^decision /, "Suggested ");
+}
+
+function reviewSourceLabel(source) {
+  return ({ agent: "Browser agent", human: "Person", system: "SituationRoom" })[source] ?? reviewLabel(source);
+}
 
 function ContractDesk({ room }) {
   const [question, setQuestion] = useState(room.activeCase.contract.question);
@@ -63,9 +88,9 @@ function ContractDesk({ room }) {
     <section className="os-workflow-desk contract-desk" aria-labelledby="contract-desk-title">
       <div className="workflow-desk-index"><span>01</span><IconFileDescription size={21} /></div>
       <div className="workflow-desk-copy">
-        <span className="os-eyebrow">You stay in control</span>
-        <h2 id="contract-desk-title">Decision setup</h2>
-        <p>Set the question and goal. An agent can suggest changes, but only you can accept them.</p>
+        <span className="os-eyebrow">Start here</span>
+        <h2 id="contract-desk-title">Question and goal</h2>
+        <p>Say what you are deciding and what a good outcome should achieve.</p>
       </div>
       <div className="contract-fields">
         <label>Decision question<input value={question} maxLength={500} onChange={(event) => setQuestion(event.target.value)} /></label>
@@ -143,20 +168,20 @@ function CollaborationDesk({ room }) {
     <section className="os-workflow-desk collaboration-desk" aria-labelledby="collaboration-desk-title">
       <div className="workflow-desk-index"><span>02</span><IconMessage2 size={21} /></div>
       <div className="workflow-desk-copy">
-        <span className="os-eyebrow">For people to decide</span>
-        <h2 id="collaboration-desk-title">Human review</h2>
-        <p>Review comments, open questions, and suggested changes before anything is accepted.</p>
+        <span className="os-eyebrow">Needs your attention</span>
+        <h2 id="collaboration-desk-title">Review queue</h2>
+        <p>Handle open questions and suggested changes that need a person.</p>
       </div>
       <div className="review-composer">
         <select aria-label="Review artifact type" value={kind} onChange={(event) => setKind(event.target.value)}>
           <option value="comment">Comment</option>
-          <option value="request_resolution">Resolution request</option>
-          <option value="branch_proposal">Branch proposal</option>
-          <option value="information_request">Information request draft</option>
-          <option value="external_action_draft">External action draft</option>
+          <option value="request_resolution">Question to resolve</option>
+          <option value="branch_proposal">Alternative proposal</option>
+          <option value="information_request">Request for information</option>
+          <option value="external_action_draft">Draft external action</option>
         </select>
-        <label className="review-note-field"><span>Review note</span><textarea value={body} maxLength={1000} rows={2} placeholder="Cite the concern, unresolved fact, or hypothetical branch…" onChange={(event) => setBody(event.target.value)} /></label>
-        <button type="button" className="is-primary" disabled={!body.trim()} onClick={stage}>{kind === "branch_proposal" ? <IconGitBranch size={17} /> : <IconMessage2 size={17} />} Stage for review</button>
+        <label className="review-note-field"><span>Add a note</span><textarea value={body} maxLength={1000} rows={2} placeholder="Describe the question, concern, or suggested change" onChange={(event) => setBody(event.target.value)} /></label>
+        <button type="button" className="is-primary" disabled={!body.trim()} onClick={stage}>{kind === "branch_proposal" ? <IconGitBranch size={17} /> : <IconMessage2 size={17} />} Add to review</button>
       </div>
       <ol className="review-artifact-strip">
         {visible.map((artifact) => {
@@ -167,8 +192,8 @@ function CollaborationDesk({ room }) {
             && ["awaiting-human", "under-human-review"].includes(artifact.status);
           return (
             <li key={artifact.id}>
-              <span>{artifact.source} · {artifact.status?.replaceAll("_", " ").replaceAll("-", " ")}</span>
-              <strong>{artifact.kind.replaceAll("_", " ")}</strong>
+              <span>{reviewSourceLabel(artifact.source)} · {reviewLabel(artifact.status)}</span>
+              <strong>{reviewLabel(artifact.kind)}</strong>
               <p>{artifact.body}</p>
               {isOpenModelProposal ? (
                 <div className="review-artifact-actions">
@@ -178,9 +203,9 @@ function CollaborationDesk({ room }) {
               ) : null}
               {isOpenHumanResolution ? (
                 <div className="review-resolution-actions">
-                  <label><span>Human response</span><textarea rows={2} maxLength={1000} value={resolutionDrafts[artifact.id] ?? ""} onChange={(event) => setResolutionDrafts((current) => ({ ...current, [artifact.id]: event.target.value }))} placeholder="Record the cited resolution or why this request cannot be accepted." /></label>
+                  <label><span>Your response</span><textarea rows={2} maxLength={1000} value={resolutionDrafts[artifact.id] ?? ""} onChange={(event) => setResolutionDrafts((current) => ({ ...current, [artifact.id]: event.target.value }))} placeholder="Explain your answer or why this request cannot be accepted." /></label>
                   <div>
-                    <button type="button" onClick={() => resolveCheckpoint(artifact.id, "resolve")}><IconCheck size={14} /> Resolve checkpoint</button>
+                    <button type="button" onClick={() => resolveCheckpoint(artifact.id, "resolve")}><IconCheck size={14} /> Save response</button>
                     <button type="button" onClick={() => resolveCheckpoint(artifact.id, "reject")}><IconX size={14} /> Reject request</button>
                     <button type="button" onClick={() => resolveCheckpoint(artifact.id, "defer")}><IconArchive size={14} /> Defer</button>
                   </div>
@@ -189,7 +214,7 @@ function CollaborationDesk({ room }) {
             </li>
           );
         })}
-        {!visible.length ? <li className="is-empty">The review exchange is empty. Every new entry will carry its author and decision revision.</li> : null}
+        {!visible.length ? <li className="is-empty"><strong>Nothing needs your attention.</strong><span>Add a note above if you want someone else to review something.</span></li> : null}
       </ol>
       {ordered.length > REVIEW_PAGE_SIZE ? (
         <nav className="workflow-pager" aria-label="Human review pages">
@@ -231,9 +256,9 @@ function OutputDesk({ room }) {
     <section className="os-workflow-desk output-desk" aria-labelledby="output-desk-title">
       <div className="workflow-desk-index"><span>03</span><IconDownload size={21} /></div>
       <div className="workflow-desk-copy">
-        <span className="os-eyebrow">Current decision version</span>
-        <h2 id="output-desk-title">Export decision</h2>
-        <p>Every file includes the supporting evidence and exact decision version. An agent can prepare it; only you can download it.</p>
+        <span className="os-eyebrow">Download</span>
+        <h2 id="output-desk-title">Choose a file type</h2>
+        <p>Every download includes the supporting evidence and the version used to create it.</p>
       </div>
       <div className="output-format-rail" aria-label="Prepare export format">
         {EXPORT_FORMATS.map(([format, label]) => <button type="button" key={format} disabled={Boolean(busyFormat)} onClick={() => prepare(format)}><span>{format}</span><strong>{label}</strong></button>)}
@@ -242,16 +267,16 @@ function OutputDesk({ room }) {
         {visibleOutputs.map((artifact) => (
           <li key={artifact.id}>
             <IconCheck size={16} />
-            <span><strong>{artifact.fileName}</strong><small>r{artifact.decisionRevision} · {artifact.source}</small></span>
+            <span><strong>{artifact.fileName}</strong><small>Decision version {artifact.decisionRevision} · {reviewSourceLabel(artifact.source)}</small></span>
             <button type="button" onClick={() => downloadPreparedOutput(artifact.id)}><IconDownload size={15} /> Download</button>
           </li>
         ))}
-        {!room.outputArtifacts.length ? <li className="is-empty">No export has been prepared yet.</li> : null}
+        {!room.outputArtifacts.length ? <li className="is-empty"><strong>No files created yet.</strong><span>PDF report is the best choice for most people.</span></li> : null}
       </ol>
       {room.outputArtifacts.length > OUTPUT_PAGE_SIZE ? (
         <nav className="workflow-pager" aria-label="Prepared output pages">
           <button type="button" disabled={outputPage === 0} onClick={() => setOutputPage((current) => current - 1)}>Previous</button>
-          <span>Page {outputPage + 1} of {outputPageCount} · {room.outputArtifacts.length} artifacts</span>
+          <span>Page {outputPage + 1} of {outputPageCount} · {room.outputArtifacts.length} files</span>
           <button type="button" disabled={outputPage + 1 >= outputPageCount} onClick={() => setOutputPage((current) => current + 1)}>Next</button>
         </nav>
       ) : null}

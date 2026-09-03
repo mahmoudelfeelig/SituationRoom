@@ -10,13 +10,11 @@ export function instrumentTransitionStyle(instrument) {
 
 export function CompiledViewHeading({ plan, headingId, kicker }) {
   return (
-    <header className="compiled-view-heading">
-      <div>
-        <span className="instrument-kicker">{kicker}</span>
-        <h2 id={headingId}>{plan.question}</h2>
-      </div>
-      <p>{plan.framing}</p>
-    </header>
+    <div className="compiled-view-heading">
+      <span className="instrument-kicker">{kicker}</span>
+      <h2 id={headingId}>{plan.question}</h2>
+      {plan.framing ? <p>{plan.framing}</p> : null}
+    </div>
   );
 }
 
@@ -38,7 +36,7 @@ export function InstrumentRegion({ label, region, instruments, renderInstrument,
   );
 }
 
-export function ThreadConnector({ label = "Leads to the next canonical decision step" }) {
+export function ThreadConnector({ label = "Leads to the next step" }) {
   return (
     <div className="compiled-thread-connector" aria-label={label} role="img">
       <span aria-hidden="true" />

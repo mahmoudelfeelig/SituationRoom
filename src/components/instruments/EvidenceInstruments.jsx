@@ -96,7 +96,7 @@ export function EvidenceExcerptInstrument({ snapshot, instrument, onAction }) {
       kicker="Exact evidence"
       title={items[0] ? titleFor(items[0].item) : "No cited evidence"}
       status={items[0]?.item?.status}
-      description="Canonical text is displayed as untrusted content and is never executed."
+      description="Imported text is shown as evidence only and can never run instructions."
     >
       {items.length ? (
         <EvidenceRows items={items} instrument={instrument} onAction={onAction} />
@@ -141,7 +141,7 @@ export function SourcePreviewInstrument({ snapshot, instrument, onAction }) {
           </ul>
         </BoundedInstrumentRegion>
       ) : (
-        <EmptyInstrumentState>No source files are available in the canonical archive.</EmptyInstrumentState>
+        <EmptyInstrumentState>No source files have been added to this decision.</EmptyInstrumentState>
       )}
     </InstrumentFrame>
   );
@@ -157,12 +157,12 @@ export function ClaimInterpretationInstrument({ snapshot, instrument, onAction }
   return (
     <InstrumentFrame
       instrument={instrument}
-      kicker="Governed interpretation"
+      kicker="What we concluded"
       title={claims[0] ? titleFor(claims[0].item) : "No interpretation available"}
       status={claims[0]?.item?.status}
     >
       {claims.length ? (
-        <BoundedInstrumentRegion itemCount={claims.length} label="Governed claim interpretations">
+        <BoundedInstrumentRegion itemCount={claims.length} label="Conclusions from the evidence">
           <ol className="claim-interpretation-list">
             {claims.map(({ item, reference }) => (
               <li key={`${reference.kind}:${reference.id}`}>
@@ -184,7 +184,7 @@ export function ClaimInterpretationInstrument({ snapshot, instrument, onAction }
           </ol>
         </BoundedInstrumentRegion>
       ) : (
-        <EmptyInstrumentState>No normalized claim is linked to this path.</EmptyInstrumentState>
+        <EmptyInstrumentState>No conclusion is linked to this evidence path.</EmptyInstrumentState>
       )}
     </InstrumentFrame>
   );
@@ -205,7 +205,7 @@ export function ContradictionDocketInstrument({ snapshot, instrument, onAction }
     .map((item) => ({ item, reference: { kind: item.kind, id: item.id } }));
   const items = firstNonEmpty(referenced, fallback).slice(0, getLimit(instrument));
   return (
-    <InstrumentFrame instrument={instrument} kicker="Challenge exhibit" title="Contradictions and disputes" status={items.length ? "warning" : "neutral"}>
+    <InstrumentFrame instrument={instrument} kicker="Conflicting evidence" title="What does not agree" status={items.length ? "warning" : "neutral"}>
       {items.length ? (
         <ul className="docket-list">
           {items.map(({ item, reference }) => (
@@ -217,7 +217,7 @@ export function ContradictionDocketInstrument({ snapshot, instrument, onAction }
           ))}
         </ul>
       ) : (
-        <EmptyInstrumentState>No contradictory or disputed canonical claims are linked to this view.</EmptyInstrumentState>
+        <EmptyInstrumentState>No conflicting evidence is linked to this view.</EmptyInstrumentState>
       )}
     </InstrumentFrame>
   );
@@ -276,7 +276,7 @@ export function PinnedContextInstrument({ snapshot, instrument, onAction }) {
   const items = referencedItems(snapshot, instrument).slice(0, getLimit(instrument));
   const unresolved = instrument.unresolvedEntityRefs ?? [];
   return (
-    <InstrumentFrame instrument={instrument} kicker="Human-locked context" title="Pinned evidence and policy" status={unresolved.length ? "warning" : "neutral"}>
+    <InstrumentFrame instrument={instrument} kicker="Saved context" title="Pinned evidence and rules" status={unresolved.length ? "warning" : "neutral"}>
       {items.length ? (
         <ul className="pinned-context-list">
           {items.map(({ item, reference }) => (
@@ -309,7 +309,7 @@ export function DataQualityDocketInstrument({ snapshot, instrument }) {
   return (
     <InstrumentFrame instrument={instrument} kicker="Import quality" title="Data quality issues" status={issueCount ? "warning" : "pass"}>
       <dl className="quality-ledger">
-        <div><dt>Canonical entities</dt><dd>{snapshot.entities?.length ?? 0}</dd></div>
+        <div><dt>Imported items</dt><dd>{snapshot.entities?.length ?? 0}</dd></div>
         <div><dt>Imported sources</dt><dd>{snapshot.sources?.length ?? 0}</dd></div>
         <div><dt>Low-confidence items</dt><dd>{lowConfidence.length}</dd></div>
         <div><dt>Sources needing attention</dt><dd>{sourceProblems.length}</dd></div>

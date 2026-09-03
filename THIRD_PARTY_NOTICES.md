@@ -2,6 +2,11 @@
 
 SituationRoom is licensed under AGPL-3.0-or-later. Third-party packages and assets keep their own licenses.
 
+## Original brand mark
+
+- **File:** `public/assets/elephant-logo.png`
+- **Work:** Mauve elephant logo, an original brand mark by Mahmoud Elfeel. It is not third-party or AI-generated.
+
 ## Paper texture
 
 - **File:** `public/assets/paper-texture.jpg`

@@ -134,7 +134,7 @@ export function AuditLedger({ room }) {
   return (
     <ModalSurface open={room.auditOpen} title="Activity history" eyebrow="See what changed, when it changed, and who changed it" onClose={() => toggleAudit(false)} size="large">
       <div className="os-audit-summary">
-        <div><IconFingerprint size={19} /><span>Decision fingerprint</span><code>{room.activeCase ? getDecisionHash(room.activeCase) : "Unavailable"}</code></div>
+        <div><IconFingerprint size={19} /><span>Decision ID</span><code>{room.activeCase ? getDecisionHash(room.activeCase) : "Unavailable"}</code></div>
         <div><IconHistory size={19} /><span>Decision version / saved view</span><strong>{room.activeCase?.revision ?? 0} / {room.viewRevision}</strong></div>
       </div>
       <DecisionPlayback receipts={receipts} activeCaseId={room.activeCase?.id} />
@@ -149,7 +149,7 @@ export function AuditLedger({ room }) {
                 <dl>
                   {receipt.revisionBefore !== undefined ? <div><dt>Decision</dt><dd>{receipt.revisionBefore ?? "new"} → {receipt.revisionAfter}</dd></div> : null}
                   {receipt.viewRevisionBefore !== undefined ? <div><dt>View</dt><dd>{receipt.viewRevisionBefore} → {receipt.viewRevisionAfter}</dd></div> : null}
-                  <div><dt>Receipt</dt><dd>{receipt.id.slice(0, 20)}</dd></div>
+                  <div><dt>Record ID</dt><dd>{receipt.id.slice(0, 20)}</dd></div>
                 </dl>
               </li>
             ))}

@@ -4,6 +4,13 @@ SituationRoom is a local-first, evidence-heavy decision workspace. A person can 
 
 The visual concept is a Living Caseboard: an asymmetric editorial evidence desk with a fixed authority spine, an always-reachable Decision Firewall, source-linked instruments, and a red causal thread connecting evidence to outcomes. It is not a chat wrapper or a generic dashboard.
 
+## Quick start for judges
+
+- **Live app:** [https://situationroom.elfeel.me](https://situationroom.elfeel.me) (no account, no keys; all data is synthetic and stays in your browser). Use **More → Reset demo** to reseed the four example decisions.
+- **Enable WebMCP:** Use ChatGPT's in-app browser, or Chrome 149+ with `chrome://flags/#enable-webmcp-testing` set to Enabled before relaunching.
+- **What you should see:** The header reports the number of site tools currently registered, the **Agent activity** thread lists each real call the page received, and **Activity history** shows a receipt with decision and view revisions before and after.
+- **Run locally:** Use Node 24, then run `npm install` and `npm run dev`. The browser suites (`npm run test:ui` and `npm run test:webmcp`) expect installed Chrome and Edge at the Windows paths in `playwright.webmcp.config.mjs`.
+
 ## What the release includes
 
 - One typed decision kernel shared by procurement, candidate review, consumer health-plan comparison, and general choice domains.
@@ -13,7 +20,7 @@ The visual concept is a Living Caseboard: an asymmetric editorial evidence desk 
 - A decision time machine that orders canonical, presentation, import, governance, workspace, and agent receipts; compares any two events; and traces the canonical entity IDs affected.
 - A complete manual lifecycle: import, inspect, review every inferred alternative, criterion, score range, gate, evidence value and status, anchor, and authority; edit the full typed model; activate; analyze; collaborate; prepare outputs; preview approval where the domain permits it; and human-only freeze.
 - A cross-document semantic intake review that resolves exact identities, proposes near aliases without merging them, preserves contradictory values as conflicts, shows confidence gates and exact anchors, and quarantines agent mapping suggestions in a separate human-review layer.
-- An in-product Codex Site-tools acceptance console plus a ten-case offline scorer. Neither can manufacture a model pass: evidence is captured only from page-received calls after a fresh armed run.
+- A privacy-bounded ten-case Site-tools evaluation corpus and offline scorer that cannot turn missing, rejected, or incomplete model work into a pass.
 - Four seeded synthetic rooms, no API keys or account requirement, and an explicit local reset that erases browser data before cleanly reseeding the demonstration.
 - Local IndexedDB persistence for cases, source material, import recovery, prepared outputs, audited commands, per-case presentation/review ledgers, shared case governance, and the transactional WebMCP journal. Active-case selection remains browser-local; presentation and review state carries no decision authority even when it is durably mirrored. A clearly labeled session-only fallback keeps the manual workspace usable but retires governed agent mutations because shared authority cannot be guaranteed.
 - Responsive desktop, tablet, and mobile compositions with keyboard navigation, an accessible outline, high-contrast-compatible controls, and reduced-motion support.
@@ -43,6 +50,29 @@ Legacy Office files, OpenDocument files, MSG, HEIC, and Parquet are recognized b
 Decision packets can be prepared locally as JSON, JSON-LD, CSV, HTML, XLSX, DOCX, or print-ready HTML for browser PDF printing. The latest 20 artifacts per case are retained; evicted blobs are deleted and any retention-cleanup failure becomes a visible session-only warning that requires a workspace reset. Candidate-review packets are requirement-evidence-only: they contain no eligibility, score, rank, blocker, recommendation, or employment outcome. WebMCP can prepare an artifact, but a person must still download, print, publish, or send it.
 
 ## Governed WebMCP
+
+Tools are registered with the WebMCP imperative API. Each active capability becomes one call of this shape; see `src/webmcp/gateway.js` for registration and `src/main.jsx` for the `document.modelContext` injection:
+
+```js
+document.modelContext.registerTool(
+  {
+    name: "compose_decision_room",
+    description: "Apply a validated semantic room recipe while preserving canonical facts and human pins.",
+    inputSchema: {
+      type: "object",
+      additionalProperties: false,
+      properties: { /* ... */ },
+      required: [ /* ... */ ],
+    },
+    annotations: { readOnlyHint: false, untrustedContentHint: true },
+    execute: async (input, { signal }) =>
+      gateway.execute("compose_decision_room", input, { signal }),
+  },
+  { signal: controller.signal },
+);
+```
+
+The registered set is recomputed from lifecycle phase, lens, permissions, domain policy, revision, and freeze state. Every condition is evaluated again inside `execute`.
 
 When the browser exposes the experimental `document.modelContext` API, SituationRoom registers a compact capability set appropriate to the current lifecycle phase, lens, role, permissions, domain policy, revision, and freeze state. The wider catalog covers:
 

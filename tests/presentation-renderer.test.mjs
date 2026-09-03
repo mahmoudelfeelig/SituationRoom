@@ -149,7 +149,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
         snapshot: awaitingSnapshot,
         plan: awaitingPlan.plan,
       }));
-      assert.match(awaitingHtml, /Awaiting scenario/);
+      assert.match(awaitingHtml, /Choose a scenario to see the result/);
       assert.match(awaitingHtml, /Run a scenario without changing the saved decision/);
 
       const scenarioResult = evaluateScenario(decisionCase, "procurement-scenario:deployment-delay", procurementPack);
@@ -179,7 +179,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
       assert.match(scenarioHtml, /10 weeks/);
       assert.match(scenarioHtml, /13 weeks/);
       assert.match(scenarioHtml, /≤ 12 weeks/);
-      assert.match(scenarioHtml, /Top-ranked but blocked/);
+      assert.match(scenarioHtml, /Highest score, but requirements are not met/);
       assert.match(scenarioHtml, /Northstar Relay/);
       assert.match(scenarioHtml, /Score 71/);
       assert.match(scenarioHtml, /Version 17 unchanged/);
@@ -203,7 +203,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
         plan: genericScenarioPlan.plan,
       }));
       assert.match(genericScenarioHtml, /2 additional scenario inputs are included in this branch/);
-      assert.match(genericScenarioHtml, /Additional scenario inputs/);
+      assert.match(genericScenarioHtml, /Other changes included/);
       assert.match(genericScenarioHtml, /Studio workstation/);
       assert.match(genericScenarioHtml, /Lightweight workstation/);
 
@@ -281,7 +281,7 @@ test("metric waterfalls never invent totals across subjects or incompatible unit
     const html = renderToStaticMarkup(React.createElement(MetricWaterfallInstrument, { snapshot, instrument }));
     assert.match(html, /410[^<]*EUR\/month/);
     assert.match(html, /1,800[^<]*EUR\/year/);
-    assert.match(html, /No cross-metric total/);
+    assert.match(html, /Values keep their original units so unlike measures are not mixed/);
     assert.doesNotMatch(html, /Total of displayed components/);
     assert.doesNotMatch(html, /2,755/);
   } finally {

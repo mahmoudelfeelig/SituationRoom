@@ -100,14 +100,14 @@ export function ConstraintGateInstrument({ snapshot, instrument, onAction, title
   }));
   const constraints = firstNonEmpty(referenced, fallback).slice(0, getLimit(instrument));
   return (
-    <InstrumentFrame instrument={instrument} kicker="Decision rules" title={title} status={constraints.some(({ item }) => normalizeStatus(matchingResult(snapshot, item, instrument)?.status ?? item.status) === "fail") ? "fail" : "neutral"}>
+    <InstrumentFrame instrument={instrument} kicker="Requirements" title={title} status={constraints.some(({ item }) => normalizeStatus(matchingResult(snapshot, item, instrument)?.status ?? item.status) === "fail") ? "fail" : "neutral"}>
       {constraints.length ? (
         <ol className="constraint-gate-list">
           {constraints.map(({ item, reference }) => {
             const result = matchingResult(snapshot, item, instrument);
             return (
               <li key={`${reference.kind}:${reference.id}`}>
-                <span className="gate-code">{item.attributes?.code || item.code || "Gate"}</span>
+                <span className="gate-code">{item.attributes?.code || item.code || "Must have"}</span>
                 <div>
                   <strong>{titleFor(item)}</strong>
                   <p>{result?.reason || summaryFor(item)}</p>
@@ -159,7 +159,7 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
     >
       <div className={`outcome-seal tone-${normalizeStatus(status)}${scenario ? " is-scenario-branch" : ""}`}>
         {normalizeStatus(status) === "pass" ? <IconCheck size={30} aria-hidden="true" /> : normalizeStatus(status) === "fail" ? <IconCircleX size={30} aria-hidden="true" /> : <IconScale size={30} aria-hidden="true" />}
-        <strong>{scenario?.outcomeLabel ?? (hypothetical ? "Awaiting scenario" : String(status || "Unknown").replaceAll("-", " "))}</strong>
+        <strong>{scenario?.outcomeLabel ?? (hypothetical ? "Choose a scenario to see the result" : String(status || "Unknown").replaceAll("-", " "))}</strong>
         <span>{summary}</span>
         {scenario ? (
           <dl className="scenario-branch-ledger">
@@ -170,7 +170,7 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
                   <dd><strong>{scenarioChange.baselineFormattedValue}</strong><em className={`status-${normalizeStatus(scenarioChange.baselineStatus)}`}>{scenarioChange.baselineStatus}</em></dd>
                 </div>
                 <div>
-                  <dt>Hypothetical</dt>
+                <dt>With this change</dt>
                   <dd><strong>{scenarioChange.scenarioFormattedValue}</strong><em className={`status-${normalizeStatus(scenarioChange.scenarioStatus)}`}>{scenarioChange.scenarioStatus}</em></dd>
                 </div>
               </>
@@ -186,7 +186,7 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
             ) : null}
             {additionalScenarioChanges.length > 0 ? (
               <div className="scenario-branch-ledger__wide scenario-branch-ledger__changes">
-                <dt>Additional scenario inputs</dt>
+                <dt>Other changes included</dt>
                 <dd>
                   <ul>
                     {additionalScenarioChanges.map((change) => (
@@ -197,13 +197,13 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
                       </li>
                     ))}
                   </ul>
-                  {undisplayedScenarioChangeCount > 0 ? <span>+{undisplayedScenarioChangeCount} more overrides included in this branch</span> : null}
+                  {undisplayedScenarioChangeCount > 0 ? <span>+{undisplayedScenarioChangeCount} more changes included</span> : null}
                 </dd>
               </div>
             ) : null}
             {scenario.recommendation ? (
               <div className="scenario-branch-ledger__wide">
-                <dt>{scenario.recommendation.eligible ? "Top eligible alternative" : "Top-ranked but blocked"}</dt>
+                <dt>{scenario.recommendation.eligible ? "Best choice in this scenario" : "Highest score, but requirements are not met"}</dt>
                 <dd><strong>{scenario.recommendation.label}</strong><span>Score {scenario.recommendation.score}</span></dd>
               </div>
             ) : null}
@@ -253,24 +253,42 @@ export function StakeholderMandateInstrument({ snapshot, instrument }) {
 }
 
 export function DecisionBriefInstrument({ snapshot, instrument, onAction }) {
-  const result = getPrimaryResult(snapshot, instrument.entityRefs);
-  const alternative = snapshot.entities?.find((entity) => entity.id === result?.subjectId)
+  const fallbackResult = getPrimaryResult(snapshot, instrument.entityRefs);
+  const recommendation = snapshot.protected?.recommendation ?? null;
+  const recommendedAlternativeId = recommendation?.id ?? fallbackResult?.subjectId;
+  const recommendationResults = (snapshot.results ?? []).filter(
+    (result) => result.subjectId === recommendedAlternativeId,
+  );
+  const result = recommendationResults[0] ?? fallbackResult;
+  const alternative = snapshot.entities?.find((entity) => entity.id === recommendedAlternativeId)
     ?? referencedItems(snapshot, instrument, ["alternative", "candidate", "plan", "vendor"])[0]?.item
     ?? null;
-  const evidenceIds = new Set(result?.evidenceIds ?? []);
-  const evidence = (snapshot.entities ?? []).filter((entity) => evidenceIds.has(entity.id));
+  const blockerCount = alternative?.attributes?.blockerCount ?? 0;
+  const isEligible = alternative?.attributes?.eligible ?? normalizeStatus(recommendation?.status) === "pass";
+  const recommendationSummary = recommendation
+    ? isEligible && blockerCount === 0
+      ? "Meets every must-have requirement and has the strongest overall score."
+      : `This is the highest-scoring option, but ${blockerCount} must-have ${blockerCount === 1 ? "requirement needs" : "requirements need"} attention.`
+    : result?.reason || alternative?.summary || "There is not enough information to make a recommendation yet.";
+  const evidence = recommendationResults.flatMap((entry) => {
+    const sourceId = entry.sourceRefs?.[0]?.fragmentId ?? entry.sourceRefs?.[0]?.id ?? entry.evidenceIds?.[0];
+    const source = snapshot.sources?.find((item) => item.id === sourceId);
+    const criterion = snapshot.entities?.find((item) => item.id === entry.criterionId);
+    return source ? [{ source, criterion }] : [];
+  });
+  const score = recommendation?.score ?? alternative?.attributes?.score;
   return (
-    <InstrumentFrame instrument={instrument} kicker="Decision brief" title={alternative ? titleFor(alternative) : "Recommendation pending"} status={result?.status ?? alternative?.status} className="decision-brief-instrument">
+    <InstrumentFrame instrument={instrument} kicker="Recommended choice" title={alternative ? titleFor(alternative) : "Recommendation pending"} status={recommendation?.status ?? result?.status ?? alternative?.status} className="decision-brief-instrument">
       <div className="decision-brief-summary">
-        <strong>{result?.reason || alternative?.summary || "The current graph does not contain a recommendation."}</strong>
-        {result?.value !== undefined ? <span>{formatCanonicalValue(result.value, result.unit, snapshot.metadata?.locale)}</span> : null}
+        <strong>{recommendationSummary}</strong>
+        {score !== undefined && score !== null ? <span>Overall score {score}</span> : null}
       </div>
       {evidence.length ? (
         <ul className="brief-evidence-list">
-          {evidence.slice(0, getLimit(instrument, 6)).map((item) => (
-            <li key={item.id}>
-              <span><strong>{titleFor(item)}</strong><small>{summaryFor(item)}</small></span>
-              <InstrumentAction type="focus" label="Trace" entityRef={{ kind: item.kind, id: item.id }} instrumentId={instrument.id} onAction={onAction} />
+          {evidence.slice(0, getLimit(instrument, 6)).map(({ source, criterion }) => (
+            <li key={`${criterion?.id ?? "evidence"}:${source.id}`}>
+              <span><strong>{criterion ? titleFor(criterion) : titleFor(source)}</strong><small>{summaryFor(source)}</small></span>
+              <InstrumentAction type="focus" label="Trace" entityRef={{ kind: source.kind, id: source.id }} instrumentId={instrument.id} onAction={onAction} />
             </li>
           ))}
         </ul>
@@ -297,5 +315,5 @@ export function BiasShieldInstrument({ snapshot, instrument }) {
 }
 
 export function ComplianceGateWallInstrument(props) {
-  return <ConstraintGateInstrument {...props} title="Compliance checks" />;
+  return <ConstraintGateInstrument {...props} title="Must-have requirements" />;
 }

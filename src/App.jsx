@@ -77,12 +77,12 @@ const ROUTE_COPY = Object.freeze({
     description: "See the recommendation, remaining concerns, and next steps in one place.",
   },
   review: {
-    eyebrow: "Human review",
-    title: "Review requests that need a person",
-    description: "Resolve open questions and approval-sensitive actions.",
+    eyebrow: "Review",
+    title: "Review open requests",
+    description: "Resolve questions and suggested changes that need your attention.",
   },
   outputs: {
-    eyebrow: "Export",
+    eyebrow: "Download",
     title: "Download the decision",
     description: "Create a file that includes the evidence and current decision version.",
   },
@@ -147,7 +147,7 @@ function BootSurface({ status, error, onRetry, onReset }) {
           {actionError ? <p className="os-error-message" role="alert">{actionError}</p> : null}
         </>
       ) : (
-        <><IconSparkles className="is-spinning" size={28} /><strong>Opening the evidence runtime</strong><p>Restoring cases, revisions, policies, and compiled instruments.</p></>
+        <><IconSparkles className="is-spinning" size={28} /><strong>Opening SituationRoom</strong><p>Restoring your decisions and evidence.</p></>
       )}
     </main>
   );
@@ -156,7 +156,7 @@ function BootSurface({ status, error, onRetry, onReset }) {
 function ViewHistoryRail({ room }) {
   return (
     <details className="os-history-rail" role="region" aria-label="View history">
-      <summary><IconHistory size={17} /><span>Saved views</span><strong>{room.history.length}</strong><small>Return to an earlier page layout</small></summary>
+      <summary><IconHistory size={17} /><span>View history</span>{room.history.length ? <strong>{room.history.length}</strong> : null}<small>Save or return to an earlier layout</small></summary>
       <div className="os-history-rail__body">
         <div className="os-history-track">
           {room.history.map((entry, index) => (
@@ -172,7 +172,7 @@ function ViewHistoryRail({ room }) {
               <small>{entry.plan.question}</small>
             </button>
           ))}
-          {!room.history.length ? <p>Saved views will appear here.</p> : null}
+          {!room.history.length ? <p>No saved views yet.</p> : null}
         </div>
         <button type="button" className="os-save-view" onClick={saveCurrentView} disabled={!room.plan}><IconRestore size={17} /> Save current view</button>
       </div>
@@ -185,22 +185,23 @@ function QuestionComposer({ room, domain, draft, setDraft, asking, ask, onSubmit
     <section className="os-question-rail" aria-labelledby="decision-question-label">
       <IconSearch size={21} aria-hidden="true" />
       <form onSubmit={onSubmit}>
-        <label id="decision-question-label" htmlFor="decision-question">Ask about this decision</label>
+        <label id="decision-question-label" htmlFor="decision-question">Ask the room</label>
         <input
           id="decision-question"
           aria-label="Ask SituationRoom to update this view"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           maxLength={240}
+          placeholder="Ask to compare, explain, or test a scenario"
           disabled={asking || room.frozen}
         />
-        <button className="os-ask-button" type="submit" aria-label="Update view" disabled={asking || room.frozen || !draft.trim()}>
+        <button className="os-ask-button" type="submit" aria-label="Ask the room" disabled={asking || room.frozen || !draft.trim()}>
           {asking ? <IconSparkles className="is-spinning" size={19} /> : <IconSend size={19} />}
-          {asking ? "Updating" : "Update view"}
+          {asking ? "Working" : "Ask"}
         </button>
       </form>
       <details className="os-question-prompts">
-        <summary>Prompt ideas</summary>
+        <summary>Try an example</summary>
         <div>{domain.prompts.slice(0, 3).map((prompt) => <button type="button" key={prompt} onClick={() => { setDraft(prompt); ask(prompt); }} disabled={room.frozen || asking}>{prompt}</button>)}</div>
       </details>
     </section>
@@ -267,8 +268,8 @@ export function App() {
   }, []);
 
   useEffect(() => {
-    setDraft(room.question);
-  }, [room.question, room.activeCase?.id]);
+    setDraft("");
+  }, [room.activeCase?.id]);
 
   useEffect(() => {
     if (!roomMapOpen) return undefined;
@@ -327,6 +328,7 @@ export function App() {
     setActionError("");
     try {
       await submitDecisionQuestion(question, options);
+      setDraft("");
     } catch (error) {
       if (error?.code !== "EXECUTION_CANCELED") setActionError(error instanceof Error ? error.message : String(error));
     } finally {
@@ -399,6 +401,7 @@ export function App() {
 
       <header className="os-header">
         <div className="brand-lockup">
+          <img className="brand-elephant" src="/assets/elephant-logo.png" alt="" />
           <h1 className="brand-name">Situation<span>Room</span></h1>
           <span className="brand-mode">Decision workspace</span>
         </div>
@@ -410,7 +413,7 @@ export function App() {
         <div className="os-header-ledger">
           <span title={`Case updated ${formatDate(room.activeCase.updatedAt)}`}><IconFingerprint size={15} /> r<strong>{room.activeCase.revision}</strong> · v<strong>{room.viewRevision}</strong></span>
           <span className={`os-webmcp-state ${room.webMcp.available ? "is-live" : ""}`}>
-            {room.webMcp.available ? `${room.webMcp.toolCount} site tools ready` : "Site tools unavailable"}
+            {room.webMcp.available ? `Browser agent ready · ${room.webMcp.toolCount} actions` : "Browser agent not connected"}
           </span>
         </div>
         {caseWorkspaceVisible ? (
@@ -485,7 +488,7 @@ export function App() {
           />
           <main className="os-decision-stage" id="decision-stage" tabIndex="-1" aria-busy={isNavigating}>
             <div className="os-stage-breadcrumb">
-              <span>{domain.label}</span><IconChevronRight size={15} /><strong>{workspaceLabel}</strong>
+              <span>{domain.label}</span><IconChevronRight size={15} /><strong>{routeCopy.eyebrow}</strong>
               <span className="os-stage-question">{analysisVisible ? room.plan?.question : room.activeCase.contract.question}</span>
             </div>
             <header className="os-route-heading">

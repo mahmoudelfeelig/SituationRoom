@@ -24,9 +24,9 @@ const LENS_ICONS = {
 };
 
 const WORKFLOW_ROUTES = Object.freeze([
-  { workspace: "model", label: "Set up decision", note: "Question and rules", icon: IconFileDescription },
-  { workspace: "review", label: "Review requests", note: "For people", icon: IconMessage2 },
-  { workspace: "outputs", label: "Export", note: "Files", icon: IconArchive },
+  { workspace: "model", label: "Setup", note: "Question and rules", icon: IconFileDescription },
+  { workspace: "review", label: "Review", note: "For people", icon: IconMessage2 },
+  { workspace: "outputs", label: "Download", note: "Files", icon: IconArchive },
 ]);
 
 function routeForCase(route, caseId, fallbackLens) {
@@ -63,7 +63,7 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
         <details>
           <summary>
             <span className={`os-case-mark accent-${domain.accent}`} aria-hidden="true">{domain.label.slice(0, 1)}</span>
-            <span><small>Current decision</small><strong>{room.activeCase.title}</strong></span>
+            <span><small>Choose decision</small><strong>{room.activeCase.title}</strong></span>
             <IconChevronDown size={18} aria-hidden="true" />
           </summary>
           <div className="os-case-tabs" aria-label="Switch active decision">
@@ -92,7 +92,6 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
       </div>
 
       <nav className="os-route-nav" aria-label="Analysis views">
-        <span className="os-spine__label"><IconRoute size={16} /><span>Understand the decision</span></span>
         <div className="os-lens-tabs">
           {Object.values(LENS_CONFIG).map((lens) => {
             const Icon = LENS_ICONS[lens.id];
@@ -114,7 +113,6 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
       </nav>
 
       <nav className="os-route-nav os-route-nav--workflow" aria-label="Decision workflow">
-        <span className="os-spine__label"><IconFileDescription size={16} /><span>Manage the decision</span></span>
         <div className="os-workflow-tabs">
           {WORKFLOW_ROUTES.map((page) => {
             const Icon = page.icon;

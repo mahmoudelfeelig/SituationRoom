@@ -9,7 +9,7 @@ import {
   IconTable,
   IconUpload,
 } from "@tabler/icons-react";
-import { DECLARED_FORMATS, SUPPORTED_FORMATS } from "../../import/index.js";
+import { DECLARED_FORMATS } from "../../import/index.js";
 import {
   cancelImport,
   clearStagedSourceDomain,
@@ -48,6 +48,38 @@ function formatInferredValue(value) {
   } catch {
     return String(value);
   }
+}
+
+const REVIEW_LABELS = Object.freeze({
+  alternatives: "options",
+  criteria: "criteria",
+  constraints: "requirements",
+  claims: "evidence values",
+  gate: "must-have",
+  score: "scored preference",
+  informational: "information only",
+  boolean: "yes or no",
+  number: "number",
+  currency: "money",
+  string: "text",
+  enum: "choice list",
+  date: "date",
+  mandatory: "must-have",
+  advisory: "preference",
+  eq: "equals",
+  ne: "does not equal",
+  gt: "greater than",
+  gte: "at least",
+  lt: "less than",
+  lte: "at most",
+  contains: "contains",
+  not_contains: "does not contain",
+  in: "is one of",
+  not_in: "is not one of",
+});
+
+function reviewLabel(value) {
+  return REVIEW_LABELS[value] ?? String(value ?? "").replaceAll(/[-_]/g, " ");
 }
 
 function ReviewPager({ label, items, pageSize, renderItem, empty = "No entries." }) {
@@ -98,22 +130,22 @@ function SemanticIntakeReview({ proposal }) {
   return (
     <section className="os-semantic-intake-review" aria-labelledby="semantic-intake-heading">
       <header>
-        <div><span className="os-eyebrow">Cross-document semantic room</span><h4 id="semantic-intake-heading">Identity, field, and conflict review</h4></div>
-        <p>Deterministic evidence stays authoritative. Browser-agent suggestions are quarantined beside it and never overwrite a mapping or merge an identity on their own.</p>
+        <div><span className="os-eyebrow">How your files were understood</span><h4 id="semantic-intake-heading">Matches and possible conflicts</h4></div>
+        <p>SituationRoom only accepts matches backed by exact source locations. Agent suggestions stay separate until you review them.</p>
       </header>
       <dl className="os-semantic-summary">
-        <div><dt>Resolved entities</dt><dd>{proposal.summary.entities}</dd></div>
-        <div><dt>Field mappings</dt><dd>{proposal.summary.mappings}</dd></div>
-        <div className={proposal.summary.conflicts ? "has-warning" : ""}><dt>Conflicts</dt><dd>{proposal.summary.conflicts}</dd></div>
-        <div><dt>Unresolved</dt><dd>{proposal.summary.unresolved}</dd></div>
-        <div><dt>Agent proposals</dt><dd>{proposal.summary.agentProposals}</dd></div>
+        <div><dt>Recognized records</dt><dd>{proposal.summary.entities}</dd></div>
+        <div><dt>Matched fields</dt><dd>{proposal.summary.mappings}</dd></div>
+        <div className={proposal.summary.conflicts ? "has-warning" : ""}><dt>Possible conflicts</dt><dd>{proposal.summary.conflicts}</dd></div>
+        <div><dt>Needs review</dt><dd>{proposal.summary.unresolved}</dd></div>
+        <div><dt>Agent suggestions</dt><dd>{proposal.summary.agentProposals}</dd></div>
         <div><dt>Overall confidence</dt><dd>{Math.round((proposal.confidence.overall ?? 0) * 100)}%</dd></div>
       </dl>
       <div className="os-semantic-ledgers">
         <section>
-          <h5>Entity resolution</h5>
+          <h5>Records found across your files</h5>
           <ReviewPager
-            label="Resolved semantic entities"
+            label="Records found across files"
             items={proposal.entities}
             pageSize={12}
             renderItem={(entity) => (
@@ -123,13 +155,13 @@ function SemanticIntakeReview({ proposal }) {
                 <small>{entity.documentIds.length} source {entity.documentIds.length === 1 ? "document" : "documents"} · {Math.round(entity.confidence * 100)}% confidence · {entity.status}</small>
               </li>
             )}
-            empty="No stable cross-document identity could be inferred."
+            empty="No record could be matched safely across the files."
           />
         </section>
         <section>
-          <h5>Deterministic field mappings</h5>
+          <h5>Fields we could match safely</h5>
           <ReviewPager
-            label="Deterministic semantic field mappings"
+            label="Safely matched fields"
             items={proposal.mappings}
             pageSize={16}
             renderItem={(mapping) => (
@@ -139,13 +171,13 @@ function SemanticIntakeReview({ proposal }) {
                 <small>{mapping.sourceAnchors.slice(0, 2).map(anchorLabel).join(" / ")}</small>
               </li>
             )}
-            empty="No anchored field mapping was safe to propose."
+            empty="No field match had enough source evidence."
           />
         </section>
         <section>
-          <h5>Conflicts and unresolved evidence</h5>
+          <h5>Possible conflicts and missing matches</h5>
           <ReviewPager
-            label="Semantic conflicts and unresolved evidence"
+            label="Possible conflicts and missing matches"
             items={[
               ...proposal.conflicts.map((item) => ({ ...item, reviewKind: "conflict" })),
               ...proposal.unresolved.map((item) => ({ ...item, reviewKind: "unresolved" })),
@@ -158,18 +190,18 @@ function SemanticIntakeReview({ proposal }) {
                 <small>{(item.sourceAnchors ?? item.values?.flatMap((value) => value.sourceAnchors) ?? []).slice(0, 2).map(anchorLabel).join(" / ") || "Human interpretation required"}</small>
               </li>
             )}
-            empty="No conflicts or unresolved anchored evidence."
+            empty="No conflicts or missing source matches."
           />
         </section>
       </div>
       <details className="os-semantic-agent-review" open={agentProposals.length > 0 || rejectedSuggestions.length > 0}>
-        <summary>Browser-agent semantic proposals · {agentProposals.length} reviewable · {rejectedSuggestions.length} rejected</summary>
+        <summary>Optional agent suggestions · {agentProposals.length} to review · {rejectedSuggestions.length} rejected</summary>
         <div>
-          <section><h5>Review-only proposals</h5><ol>{agentProposals.length ? agentProposals.map((item) => <li key={item.id}><strong>{item.kind === "field-mapping" ? `${item.sourceField} → ${item.targetCriterion}` : item.aliases.join(" ↔ ")}</strong><span>{Math.round(item.confidence * 100)}% confidence · {item.wouldOverride ? "would differ from deterministic mapping" : "does not replace deterministic evidence"}</span><small>{item.sourceAnchors.map(anchorLabel).join(" / ")}</small></li>) : <li>No agent proposal has passed validation.</li>}</ol></section>
+          <section><h5>Suggestions to review</h5><ol>{agentProposals.length ? agentProposals.map((item) => <li key={item.id}><strong>{item.kind === "field-mapping" ? `${item.sourceField} → ${item.targetCriterion}` : item.aliases.join(" ↔ ")}</strong><span>{Math.round(item.confidence * 100)}% confidence · {item.wouldOverride ? "differs from a confirmed match" : "leaves confirmed matches unchanged"}</span><small>{item.sourceAnchors.map(anchorLabel).join(" / ")}</small></li>) : <li>No agent suggestion passed validation.</li>}</ol></section>
           <section><h5>Rejected suggestions</h5><ol>{rejectedSuggestions.length ? rejectedSuggestions.map((item, index) => <li key={`${item.id ?? "rejected"}:${index}`}><strong>{item.code}</strong><span>{item.message}</span></li>) : <li>No rejected suggestions.</li>}</ol></section>
         </div>
       </details>
-      {(proposal.conflicts.length || proposal.resolutionProposals.length || agentProposals.length) ? <p className="os-semantic-resolution-route">These items remain advisory or unresolved in the draft. Commit only after reviewing every anchor, then resolve accepted interpretations in the typed Model before activation.</p> : null}
+      {(proposal.conflicts.length || proposal.resolutionProposals.length || agentProposals.length) ? <p className="os-semantic-resolution-route">Review each highlighted item and its source before saving. You can correct accepted matches during setup.</p> : null}
     </section>
   );
 }
@@ -365,8 +397,8 @@ export function IntakeWorkbench({ room }) {
   const staged = files.length > 0 || pastedText.trim().length > 0;
   const footer = phase === "review" ? (
     <>
-      <button type="button" className="os-button-secondary" disabled={dismissBusy} onClick={() => discardCurrent({ returnToStage: true })}>{dismissBusy ? "Verifying deletion" : "Discard and revise intake"}</button>
-      <button type="button" className="os-button-primary" disabled={!confirmed} onClick={commit}><IconCheck size={18} /> Commit reviewed draft</button>
+      <button type="button" className="os-button-secondary" disabled={dismissBusy} onClick={() => discardCurrent({ returnToStage: true })}>{dismissBusy ? "Removing files" : "Go back and edit"}</button>
+      <button type="button" className="os-button-primary" disabled={!confirmed} onClick={commit}><IconCheck size={18} /> Create decision draft</button>
     </>
   ) : phase === "recovery" ? (
     <>
@@ -381,30 +413,30 @@ export function IntakeWorkbench({ room }) {
   ) : phase === "stage" || phase === "error" ? (
     <>
       <button type="button" className="os-button-secondary" onClick={close}>Cancel</button>
-      <button type="button" className="os-button-primary" disabled={!staged || !objective.trim()} onClick={inspect}><IconFileImport size={18} /> Inspect and propose contract</button>
+      <button type="button" className="os-button-primary" disabled={!staged || !objective.trim()} onClick={inspect}><IconFileImport size={18} /> Review and continue</button>
     </>
   ) : phase === "processing" ? (
     <button type="button" className="os-button-secondary" disabled={dismissBusy} onClick={() => discardCurrent({ returnToStage: true })}>{dismissBusy ? "Verifying deletion" : "Cancel import"}</button>
   ) : null;
 
   return (
-    <ModalSurface open={room.intakeOpen} title="Construct a new decision room" eyebrow="Local-first staged import" onClose={phase === "committing" || dismissBusy ? undefined : review?.cleanupPending ? returnToRoom : close} size="wide" footer={footer}>
+    <ModalSurface open={room.intakeOpen} title="Create a decision" eyebrow="Your files stay in this browser" onClose={phase === "committing" || dismissBusy ? undefined : review?.cleanupPending ? returnToRoom : close} size="wide" footer={footer}>
       {phase === "stage" || phase === "error" ? (
         <div className="os-intake-grid">
           <section className="os-intake-brief">
             <span className="os-step-index">A</span>
-            <h3>Declare the decision</h3>
-            <label>Room title<input value={title} onChange={(event) => { clearStagedSourceDomain(files); setTitle(event.target.value); }} maxLength={160} placeholder="Example: 2027 household health-plan choice" /></label>
-            <label>What should the room help decide?<textarea value={objective} onChange={(event) => { clearStagedSourceDomain(files); setObjective(event.target.value); }} maxLength={600} rows={5} placeholder="Describe the objective, affected people, hard constraints, and what a good outcome means." /></label>
-            <label>Decision domain<select value={domain} onChange={(event) => { clearStagedSourceDomain(files); setDomain(event.target.value); }}>
-              <option value="auto">Infer from objective and sources</option>
+            <h3>What are you deciding?</h3>
+            <label>Decision name<input value={title} onChange={(event) => { clearStagedSourceDomain(files); setTitle(event.target.value); }} maxLength={160} placeholder="Example: Choose our 2027 health plan" /></label>
+            <label>What should SituationRoom help you decide?<textarea value={objective} onChange={(event) => { clearStagedSourceDomain(files); setObjective(event.target.value); }} maxLength={600} rows={5} placeholder="Describe the goal, the people affected, your must-haves, and what a good outcome looks like." /></label>
+            <label>Type of decision<select value={domain} onChange={(event) => { clearStagedSourceDomain(files); setDomain(event.target.value); }}>
+              <option value="auto">Choose automatically from my information</option>
               {Object.values(DOMAIN_CONFIG).map((item) => <option value={item.id} key={item.id}>{item.label}</option>)}
             </select></label>
-            <p className="os-field-note"><IconShieldLock size={17} /> The domain selects deterministic policy. Imported text cannot change authority or unlock actions.</p>
+            <p className="os-field-note"><IconShieldLock size={17} /> Imported text can provide evidence, but it cannot change who is allowed to decide or approve.</p>
           </section>
           <section className="os-intake-sources">
             <span className="os-step-index">B</span>
-            <h3>Stage source material</h3>
+            <h3>Add your information</h3>
             <div
               className="os-drop-zone"
               onDragOver={(event) => { event.preventDefault(); event.currentTarget.classList.add("is-dragging"); }}
@@ -412,28 +444,28 @@ export function IntakeWorkbench({ room }) {
               onDrop={(event) => { event.preventDefault(); event.currentTarget.classList.remove("is-dragging"); addFiles([...event.dataTransfer.files]); }}
             >
               <IconUpload size={28} />
-              <strong>Drop mixed files into the case archive</strong>
-              <span>PDF, DOCX, XLSX, PPTX, tables, structured data, EML, text, OCR images, or ZIP bundles</span>
+              <strong>Drop files here</strong>
+              <span>PDF, Word, Excel, PowerPoint, CSV, email, text, images, JSON, YAML, or ZIP</span>
               <button type="button" onClick={() => inputRef.current?.click()}>Choose files</button>
               <input ref={inputRef} type="file" multiple hidden onChange={(event) => addFiles([...event.target.files])} />
             </div>
-            <label>Or paste source text<textarea value={pastedText} onChange={(event) => { clearStagedSourceDomain(files); setPastedText(event.target.value); }} rows={4} placeholder="Paste a plan summary, job description, requirements, notes, or tabular text." /></label>
-            <div className="os-format-line">
-              <span>{SUPPORTED_FORMATS.size} parsed formats · {DECLARED_FORMATS.length - SUPPORTED_FORMATS.size} recognized with explicit diagnostics</span>
-              <code>Native: {[...SUPPORTED_FORMATS].join(" · ")} · Diagnostic only: {DECLARED_FORMATS.filter((format) => !SUPPORTED_FORMATS.has(format)).join(" · ")}</code>
-            </div>
+            <label>Or paste text<textarea value={pastedText} onChange={(event) => { clearStagedSourceDomain(files); setPastedText(event.target.value); }} rows={4} placeholder="Paste a plan summary, job description, requirements, notes, or table." /></label>
+            <details className="os-format-line">
+              <summary>Supports {DECLARED_FORMATS.length} common file formats</summary>
+              <p>Works directly with PDF, Word, Excel, PowerPoint, CSV, email, text, images, JSON, YAML, and ZIP. Older or specialist files are kept separate when they cannot be read safely.</p>
+            </details>
           </section>
           <section className="os-staged-files" aria-label="Staged files">
             <div><h3>Files to review</h3><span>{files.length} files · {formatBytes(totalBytes)}</span></div>
             <ul>
-              {files.map((file, index) => <li key={`${file.name}:${file.size}:${index}`} data-source-id={sourceIdForLocalFile(file)}><IconFile size={17} /><span><strong>{file.name}</strong><small>{file.type || "signature detected during import"} · {formatBytes(file.size)} · {sourceIdForLocalFile(file)}</small></span><button type="button" onClick={() => { unstageLocalSources([file]); setFiles(files.filter((_, itemIndex) => itemIndex !== index)); }}>Remove</button></li>)}
+              {files.map((file, index) => <li key={`${file.name}:${file.size}:${index}`} data-source-id={sourceIdForLocalFile(file)}><IconFile size={17} /><span><strong>{file.name}</strong><small>{file.type || "File type checked during import"} · {formatBytes(file.size)}</small></span><button type="button" onClick={() => { unstageLocalSources([file]); setFiles(files.filter((_, itemIndex) => itemIndex !== index)); }}>Remove</button></li>)}
             </ul>
             {!files.length ? <p>No local files added. You can still paste text and review it before importing.</p> : null}
             {files.length ? (
               <div className="os-agent-source-authority">
                 <IconShieldLock size={18} />
-                <div><strong>{room.stagedDomainReservation === inferredDomainId ? `${DOMAIN_CONFIG[inferredDomainId].label} policy confirmed` : "Agent source access is not yet authorized"}</strong><span>File names stay human-visible; WebMCP receives only opaque source handles. New-case agent import is denied until you confirm this exact policy domain.</span></div>
-                <button type="button" disabled={room.stagedDomainReservation === inferredDomainId} onClick={() => confirmStagedSourceDomain(files, inferredDomainId)}>{room.stagedDomainReservation === inferredDomainId ? "Confirmed" : `Confirm ${DOMAIN_CONFIG[inferredDomainId].label} domain`}</button>
+                <div><strong>{room.stagedDomainReservation === inferredDomainId ? `${DOMAIN_CONFIG[inferredDomainId].label} rules confirmed` : "Confirm how these files will be handled"}</strong><span>The agent receives private file references instead of file names. Confirm the decision type before it reads the imported information.</span></div>
+                <button type="button" disabled={room.stagedDomainReservation === inferredDomainId} onClick={() => confirmStagedSourceDomain(files, inferredDomainId)}>{room.stagedDomainReservation === inferredDomainId ? "Confirmed" : `Use ${DOMAIN_CONFIG[inferredDomainId].label} rules`}</button>
               </div>
             ) : null}
           </section>
@@ -444,9 +476,9 @@ export function IntakeWorkbench({ room }) {
       {phase === "processing" || phase === "committing" ? (
         <div className="os-import-progress" role="status" ref={phaseFocusRef} tabIndex="-1">
           <IconLoader2 className="is-spinning" size={34} />
-          <span className="os-eyebrow">{phase === "processing" ? "Parsing and quarantining" : "Atomic canonical commit"}</span>
-          <h3>{phase === "processing" ? "Building the source graph" : "Creating the decision room"}</h3>
-          <p>{phase === "processing" ? "Files are fingerprinted, type-sniffed, parsed in bounded adapters, scanned as untrusted content, and retained with exact anchors." : "The reviewed contract, documents, fragments, and claims are committing as one atomic canonical case revision."}</p>
+          <span className="os-eyebrow">{phase === "processing" ? "Reading your information" : "Saving your decision"}</span>
+          <h3>{phase === "processing" ? "Organizing the evidence" : "Creating the decision"}</h3>
+          <p>{phase === "processing" ? "SituationRoom is identifying the file types, checking the content, and linking each extracted fact back to its source." : "SituationRoom is saving the question, options, criteria, requirements, and supporting evidence together."}</p>
           {activeJob ? <code>{activeJob.id}</code> : null}
         </div>
       ) : null}
@@ -454,20 +486,20 @@ export function IntakeWorkbench({ room }) {
       {phase === "recovery" && review?.recovery ? (
         <div className="os-import-progress" role="alert" ref={phaseFocusRef} tabIndex="-1">
           <IconAlertTriangle size={34} />
-          <span className="os-eyebrow">Human recovery checkpoint · {review.job.phase}</span>
-          <h3>{review.cleanupPending ? "Canonical commit complete; source cleanup pending" : review.mappingError ? "Domain-safe mapping cannot proceed" : review.canResumeCommit ? "Reconcile an interrupted canonical commit" : "Retained source data needs a decision"}</h3>
+          <span className="os-eyebrow">Import needs attention · {review.job.phase}</span>
+          <h3>{review.cleanupPending ? "Decision saved; source cleanup still needed" : review.mappingError ? "These files cannot be imported safely" : review.canResumeCommit ? "Finish saving the interrupted import" : "Choose what to do with these source files"}</h3>
           <p>{review.cleanupPending
-            ? "The reviewed decision revision is already canonical. Some raw or parsed local source copies could not yet be deleted. No decision command will be replayed during cleanup."
+            ? "The decision is already saved, but some temporary local copies could not be deleted. Retrying cleanup will not save the decision again."
             : review.preparationError ?? review.mappingDiagnostics?.[0]?.message ?? review.job.error?.message ?? "The import did not reach review."}</p>
           <p>{review.cleanupPending
-            ? "Retry cleanup to remove every remaining retained source handle. You may return to the room; the visible recovery docket remains open and governed agent mutations stay retired until deletion succeeds."
+            ? "Retry cleanup to remove the remaining temporary source copies. You can return to the decision while this warning stays visible."
             : review.mappingError
-              ? "The source remains isolated and has not entered the canonical case. Discard it, then provide a blinded or otherwise policy-compliant structured extraction."
+              ? "The source is still separate from the decision. Remove it, then provide a safer structured or blinded version."
             : review.canResumeCommit
-            ? "SituationRoom will replay the exact durable commit intent with the original idempotency key. It will not create a second decision revision."
+            ? "SituationRoom will finish the original save. It will not create a duplicate decision version."
             : review.canRetry
-              ? "Retry runs the retained bytes through the full parser again. Discard permanently removes the retained raw input and parsed documents."
-              : "This source cannot safely proceed. Discard it, then revise or reselect the source material."}</p>
+              ? "Retry reads the files again. Discard permanently removes the temporary originals and extracted copies."
+              : "These files cannot safely continue. Remove them, then revise or choose different files."}</p>
           <code>{review.job.id} · version {review.job.version}</code>
         </div>
       ) : null}
@@ -475,39 +507,39 @@ export function IntakeWorkbench({ room }) {
       {phase === "review" && review ? (
         <div className="os-contract-review" ref={phaseFocusRef} tabIndex="-1">
           <header>
-            <div><span className="os-step-index">C</span><span className="os-eyebrow">Agent-proposed · human-confirmed</span><h3>Decision Contract</h3></div>
+            <div><span className="os-step-index">C</span><span className="os-eyebrow">Review before saving</span><h3>Check the imported decision</h3></div>
             <span className={`os-domain-seal domain-${review.proposal.caseInput.domain.packId}`}>{DOMAIN_CONFIG[review.proposal.caseInput.domain.packId]?.label ?? "General decision"}</span>
           </header>
           <blockquote>{review.proposal.caseInput.contract.objective}</blockquote>
           <div className="os-contract-counts">
-            {Object.entries(review.proposal.summary).map(([key, value]) => <div key={key}><strong>{value}</strong><span>{key}</span></div>)}
+            {Object.entries(review.proposal.summary).map(([key, value]) => <div key={key}><strong>{value}</strong><span>{reviewLabel(key)}</span></div>)}
           </div>
           {(() => {
             const sourceDiagnostics = review.documents.flatMap((document) => document.diagnostics.map((diagnostic, index) => ({ ...diagnostic, id: `${document.id}:${index}`, document: document.name })));
             return (
           <div className="os-contract-columns">
-            <section><h4>Alternatives</h4><ReviewPager label="Alternatives" items={review.proposal.caseInput.alternatives} pageSize={16} renderItem={(item) => <li key={item.id}>{item.label}</li>} /></section>
-            <section><h4>Criteria and scoring</h4><ReviewPager label="Criteria and scoring" items={review.proposal.caseInput.criteria} pageSize={20} renderItem={(item) => <li key={item.id}><span>{item.label}</span><strong>{item.kind} · {item.valueType}{item.unit ? ` · ${item.unit}` : ""}</strong><small>{item.weight !== undefined ? `Weight ${item.weight}. ` : ""}{item.scoring ? `${item.scoring.direction ?? item.scoring.kind}; range ${formatInferredValue(item.scoring.min)} to ${formatInferredValue(item.scoring.max)}.` : "No automatic scoring rule."}</small></li>} /></section>
-            <section><h4>Source diagnostics</h4><ReviewPager label="Source diagnostics" items={sourceDiagnostics} pageSize={18} renderItem={(item) => <li key={item.id} className={`severity-${item.severity}`}><span>{item.document}</span><strong>{item.code}</strong><small>{item.message}</small></li>} /></section>
+            <section><h4>Options</h4><ReviewPager label="Options" items={review.proposal.caseInput.alternatives} pageSize={16} renderItem={(item) => <li key={item.id}>{item.label}</li>} /></section>
+            <section><h4>Criteria</h4><ReviewPager label="Criteria" items={review.proposal.caseInput.criteria} pageSize={20} renderItem={(item) => <li key={item.id}><span>{item.label}</span><strong>{reviewLabel(item.kind)} · {reviewLabel(item.valueType)}{item.unit ? ` · ${item.unit}` : ""}</strong><small>{item.weight !== undefined ? `Weight ${item.weight}. ` : ""}{item.scoring ? `${reviewLabel(item.scoring.direction ?? item.scoring.kind)}; range ${formatInferredValue(item.scoring.min)} to ${formatInferredValue(item.scoring.max)}.` : "Not automatically scored."}</small></li>} /></section>
+            <section><h4>File issues</h4><ReviewPager label="File issues" items={sourceDiagnostics} pageSize={18} renderItem={(item) => <li key={item.id} className={`severity-${item.severity}`}><span>{item.document}</span><strong>{item.code}</strong><small>{item.message}</small></li>} /></section>
           </div>
             );
           })()}
           <div className="os-inferred-model-review">
             <section>
-              <h4>Mandatory and advisory gates</h4>
-              <ol>{review.proposal.caseInput.constraints.length ? review.proposal.caseInput.constraints.map((item) => <li key={item.id}><strong>{item.label ?? item.criterionId}</strong><span>{item.severity} · {item.operator} · expected {formatInferredValue(item.expected)}</span></li>) : <li>No gates were inferred.</li>}</ol>
+              <h4>Must-haves and preferences</h4>
+              <ol>{review.proposal.caseInput.constraints.length ? review.proposal.caseInput.constraints.map((item) => <li key={item.id}><strong>{item.label ?? item.criterionId}</strong><span>{reviewLabel(item.severity)} · {reviewLabel(item.operator)} · {formatInferredValue(item.expected)}</span></li>) : <li>No requirements were found.</li>}</ol>
             </section>
             <section>
-              <h4>Evidence values and exact anchors</h4>
-              <ReviewPager label="Evidence values and exact anchors" items={review.proposal.claims} pageSize={80} renderItem={(claim) => <li key={claim.id}><strong>{claim.subjectId} → {claim.criterionId}</strong><span>{formatInferredValue(claim.value)} · {claim.status} · confidence {claim.confidence ?? "unknown"}</span><small>{claim.sourceRefs?.[0]?.documentId} · {claim.sourceRefs?.[0]?.fragmentId}</small></li>} />
+              <h4>Evidence values and source locations</h4>
+              <ReviewPager label="Evidence values and source locations" items={review.proposal.claims} pageSize={80} renderItem={(claim) => <li key={claim.id}><strong>{claim.subjectId} → {claim.criterionId}</strong><span>{formatInferredValue(claim.value)} · {reviewLabel(claim.status)} · confidence {claim.confidence ?? "unknown"}</span><small>{claim.sourceRefs?.[0]?.documentId} · {claim.sourceRefs?.[0]?.fragmentId}</small></li>} />
             </section>
             <section>
-              <h4>Authority and activation</h4>
+              <h4>Decision permissions</h4>
               <dl>
-                <div><dt>Mode</dt><dd>{review.proposal.caseInput.contract.authority.mode}</dd></div>
-                <div><dt>Automated ranking</dt><dd>{review.proposal.caseInput.contract.authority.allowAutomatedRanking ? "Allowed for decision support" : "Prohibited"}</dd></div>
-                <div><dt>Human-only actions</dt><dd>{review.proposal.caseInput.contract.authority.humanOnlyActions.join(", ")}</dd></div>
-                <div><dt>Initial status</dt><dd>Draft. Analysis tools remain unavailable until a person activates it.</dd></div>
+                <div><dt>Final decision</dt><dd>{review.proposal.caseInput.contract.authority.mode.replaceAll("_", " ").replaceAll("-", " ")}</dd></div>
+                <div><dt>Option ranking</dt><dd>{review.proposal.caseInput.contract.authority.allowAutomatedRanking ? "Allowed as decision support" : "Turned off"}</dd></div>
+                <div><dt>Actions only a person can take</dt><dd>{review.proposal.caseInput.contract.authority.humanOnlyActions.join(", ").replaceAll("_", " ")}</dd></div>
+                <div><dt>After import</dt><dd>Saved as a draft until a person finishes setup.</dd></div>
               </dl>
             </section>
           </div>
@@ -515,9 +547,9 @@ export function IntakeWorkbench({ room }) {
           {review.proposal.warnings.length ? <div className="os-review-warnings"><IconAlertTriangle size={18} /><ul>{review.proposal.warnings.map((warning) => <li key={warning}>{warning}</li>)}</ul></div> : null}
           <label className="os-confirmation-check">
             <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-            <span>I reviewed the complete paginated alternatives, typed criteria, scoring directions and ranges, gates, evidence statuses, exact anchors, semantic identities, unresolved conflicts, quarantined agent proposals, authority, and diagnostics. Commit this as a draft for typed editing; do not activate it yet.</span>
+            <span>I checked the options, criteria, requirements, evidence links, unresolved conflicts, and who is allowed to make the final decision. Save this as a draft for further review.</span>
           </label>
-          <p className="os-field-note"><IconTable size={17} /> Text fields remain informational until an explicit deterministic rule is confirmed. Missing cells remain unknown, never zero.</p>
+          <p className="os-field-note"><IconTable size={17} /> Text stays informational until you confirm a rule. Missing cells stay unknown; they are never treated as zero.</p>
           {error ? <p className="os-error-message" role="alert">{error}</p> : null}
         </div>
       ) : null}

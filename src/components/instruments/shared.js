@@ -33,12 +33,16 @@ export function confidenceFor(item) {
     : null;
 }
 
-export function titleFor(item, fallback = "Untitled canonical item") {
+export function titleFor(item, fallback = "Untitled item") {
   return item?.label || item?.title || item?.name || fallback;
 }
 
 export function summaryFor(item) {
-  return item?.summary || item?.text || item?.reason || "No explanatory text was provided.";
+  const summary = item?.summary || item?.text || item?.reason;
+  if (["constraint", "requirement"].includes(item?.kind) && /^(eq|equals?)\s+true$/i.test(String(summary ?? "").trim())) {
+    return "Must be confirmed";
+  }
+  return summary || "No explanation was provided.";
 }
 
 export function sortCanonical(items, sort = "canonical") {
@@ -49,4 +53,3 @@ export function sortCanonical(items, sort = "canonical") {
   if (sort === "value-desc") return copy.sort((left, right) => Number(right.value ?? 0) - Number(left.value ?? 0));
   return copy;
 }
-

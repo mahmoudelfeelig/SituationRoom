@@ -424,7 +424,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
 
   expectWorkspaceUnchanged(await appSnapshot(page), beforeAnalysis);
 
-  await selectWorkflowPhase(page, "Set up decision", "contract_draft");
+  await selectWorkflowPhase(page, "Setup", "contract_draft");
   await expect.poll(async () => toolNames(page)).toContain("propose_decision_contract");
   const modelTools = await discover(page);
   observedTools.push(...modelTools);
@@ -451,18 +451,18 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(afterProposal.decisionRevision).toBe(beforeProposal.decisionRevision);
   expect(afterProposal.decisionHash).toBe(beforeProposal.decisionHash);
 
-  await selectWorkflowPhase(page, "Review requests", "collaboration");
+  await selectWorkflowPhase(page, "Review", "collaboration");
   await expect.poll(async () => toolNames(page)).toContain("comment_on_entity");
   await expect(page.locator(".review-artifact-strip")).toContainText("Contract activation and authority changes require a human-reviewed canonical contract replacement.");
-  const proposalRow = page.locator(".review-artifact-strip li").filter({ hasText: "decision proposeContract" }).first();
+  const proposalRow = page.locator(".review-artifact-strip li").filter({ hasText: "Suggested question and goal" }).first();
   await proposalRow.getByRole("button", { name: "Review in model" }).click();
-  await expect(page.getByRole("heading", { name: "Decision model editor" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Options, criteria, and requirements" })).toBeVisible();
   await expect(page.locator(".model-proposal-brief")).toContainText("Use source-linked gates and transparent cost evidence for human review.");
   const duringHumanReview = await appSnapshot(page);
   expect(duringHumanReview.activeCaseJson).toBe(beforeProposal.activeCaseJson);
   expect(duringHumanReview.decisionHash).toBe(beforeProposal.decisionHash);
-  await page.getByRole("button", { name: "Return to review" }).click();
-  await expect(page.getByRole("heading", { name: "Human review" })).toBeVisible();
+  await page.getByRole("button", { name: "Decide later" }).click();
+  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible();
   await proposalRow.getByRole("button", { name: "Reject proposal" }).click();
   await expect(proposalRow).toContainText("rejected by human");
   expect((await appSnapshot(page)).activeCaseJson).toBe(beforeProposal.activeCaseJson);
@@ -471,7 +471,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(collaborationTools.map((tool) => tool.name)).toContain("create_branch");
   assertNoProhibitedNames(collaborationTools);
 
-  await selectWorkflowPhase(page, "Export", "output");
+  await selectWorkflowPhase(page, "Download", "output");
   await expect.poll(async () => toolNames(page)).toContain("export_case");
   const outputTools = await discover(page);
   observedTools.push(...outputTools);
@@ -553,7 +553,7 @@ test("request_human_resolution stages a cited Review artifact without opening hu
   const alternative = before.presentation.entities.find((entity) => entity.kind === "alternative");
   expect(alternative).toBeTruthy();
 
-  await selectWorkflowPhase(page, "Review requests", "collaboration");
+  await selectWorkflowPhase(page, "Review", "collaboration");
   await expect.poll(async () => toolNames(page)).toContain("request_human_resolution");
 
   const invented = await executeTool(page, "request_human_resolution", {
@@ -591,7 +591,7 @@ test("request_human_resolution stages a cited Review artifact without opening hu
 
   const visibleArtifact = page.locator(".review-artifact-strip li").filter({ hasText: question });
   await expect(visibleArtifact).toBeVisible();
-  await expect(visibleArtifact).toContainText("human resolution request");
+  await expect(visibleArtifact).toContainText("Question needing a decision");
   await expect(visibleArtifact).toContainText("agent · awaiting human");
   await expect(page.getByRole("dialog", { name: "Approve this decision" })).toHaveCount(0);
 
@@ -615,8 +615,8 @@ test("request_human_resolution stages a cited Review artifact without opening hu
   expect((await discover(page)).every((tool) => tool.readOnlyHint === true)).toBe(true);
 
   const restoredVisibleArtifact = page.locator(".review-artifact-strip li").filter({ hasText: question });
-  await restoredVisibleArtifact.getByLabel("Human response").fill("The cited incident-response evidence was independently verified and the contradiction is closed.");
-  await restoredVisibleArtifact.getByRole("button", { name: "Resolve checkpoint" }).click();
+  await restoredVisibleArtifact.getByLabel("Your response").fill("The cited incident-response evidence was independently verified and the contradiction is closed.");
+  await restoredVisibleArtifact.getByRole("button", { name: "Save response" }).click();
   await expect.poll(async () => page.evaluate((artifactId) => {
     const room = window.__situationRoom.getState();
     return {
@@ -635,7 +635,7 @@ test("a frozen case with a pending human checkpoint normalizes analysis deep lin
   const alternative = before.presentation.entities.find((entity) => entity.kind === "alternative");
   expect(alternative).toBeTruthy();
 
-  await selectWorkflowPhase(page, "Review requests", "collaboration");
+  await selectWorkflowPhase(page, "Review", "collaboration");
   const requested = await executeTool(page, "request_human_resolution", {
     caseId: before.activeCaseId,
     entityRefs: [{ kind: "alternative", id: alternative.id }],
@@ -737,7 +737,7 @@ test("session-only fallback stays usable, retires governed agent mutations, and 
 test("prepared decision packets retain only the latest twenty durable blobs", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await waitForIntegratedRoom(page);
-  await selectWorkflowPhase(page, "Export", "output");
+  await selectWorkflowPhase(page, "Download", "output");
   const before = await appSnapshot(page);
 
   for (let index = 0; index < 22; index += 1) {
@@ -751,9 +751,9 @@ test("prepared decision packets retain only the latest twenty durable blobs", as
   }
   expect(await page.evaluate(() => window.__situationRoom.getState().outputArtifacts.length)).toBe(20);
   const outputPager = page.getByRole("navigation", { name: "Prepared output pages" });
-  await expect(outputPager).toContainText("Page 1 of 5 · 20 artifacts");
+  await expect(outputPager).toContainText("Page 1 of 5 · 20 files");
   await outputPager.getByRole("button", { name: "Next" }).click();
-  await expect(outputPager).toContainText("Page 2 of 5 · 20 artifacts");
+  await expect(outputPager).toContainText("Page 2 of 5 · 20 files");
   const durableOutputCount = await page.evaluate(async (caseId) => {
     const request = indexedDB.open("situation-room-os-v2", 2);
     const database = await new Promise((resolve, reject) => {
@@ -777,8 +777,8 @@ test("prepared decision packets retain only the latest twenty durable blobs", as
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForIntegratedRoom(page);
   expect(await page.evaluate(() => window.__situationRoom.getState().outputArtifacts.length)).toBe(20);
-  await selectWorkflowPhase(page, "Export", "output");
-  await expect(page.getByRole("navigation", { name: "Prepared output pages" })).toContainText("Page 1 of 5 · 20 artifacts");
+  await selectWorkflowPhase(page, "Download", "output");
+  await expect(page.getByRole("navigation", { name: "Prepared output pages" })).toContainText("Page 1 of 5 · 20 files");
 });
 
 test("a real WebMCP candidate import reopens the same explicit human review after reload and commits safely", async ({ page }) => {
@@ -788,7 +788,7 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await waitForIntegratedRoom(page);
   await openNewDecision(page);
-  const dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
+  const dialog = page.getByRole("dialog", { name: "Create a decision" });
   await expect(dialog).toBeVisible();
   await dialog.locator('input[type="file"]').setInputFiles({
     name: "candidate-evidence.csv",
@@ -802,7 +802,7 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
   const sourceId = await dialog.locator(".os-staged-files li").getAttribute("data-source-id");
   expect(sourceId).toMatch(/^staged:/);
   expect(sourceId).not.toMatch(/candidate|evidence/i);
-  await dialog.getByRole("button", { name: "Confirm Candidate review domain" }).click();
+  await dialog.getByRole("button", { name: "Use Candidate review rules" }).click();
   await expect.poll(async () => toolNames(page)).toContain("start_import");
 
   const mismatchedDomain = await executeTool(page, "start_import", {
@@ -820,7 +820,7 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
     idempotencyKey: "browser-candidate-import-0001",
   });
   expect(started.parsed.ok).toBe(true);
-  await expect(dialog.getByRole("heading", { name: "Decision Contract" })).toBeVisible({ timeout: 20_000 });
+  await expect(dialog.getByRole("heading", { name: "Check the imported decision" })).toBeVisible({ timeout: 20_000 });
   const beforeReload = await page.evaluate(() => {
     const review = window.__situationRoom.getState().activeImportReview;
     return {
@@ -914,8 +914,8 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForIntegratedRoom(page);
-  const restoredDialog = page.getByRole("dialog", { name: "Construct a new decision room" });
-  await expect(restoredDialog.getByRole("heading", { name: "Decision Contract" })).toBeVisible({ timeout: 20_000 });
+  const restoredDialog = page.getByRole("dialog", { name: "Create a decision" });
+  await expect(restoredDialog.getByRole("heading", { name: "Check the imported decision" })).toBeVisible({ timeout: 20_000 });
   const restored = await page.evaluate(() => {
     const review = window.__situationRoom.getState().activeImportReview;
     return {
@@ -932,8 +932,8 @@ test("a real WebMCP candidate import reopens the same explicit human review afte
     pendingHumanCheckpoint: true,
   });
 
-  await restoredDialog.getByLabel(/I reviewed the complete paginated alternatives/).check();
-  await restoredDialog.getByRole("button", { name: "Commit reviewed draft" }).click();
+  await restoredDialog.getByLabel(/I checked the options, criteria, requirements/).check();
+  await restoredDialog.getByRole("button", { name: "Create decision draft" }).click();
   await expect(restoredDialog).toBeHidden({ timeout: 20_000 });
   const committed = await page.evaluate(async ({ jobId, caseId }) => {
     const room = window.__situationRoom.getState();

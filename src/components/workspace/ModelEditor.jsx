@@ -17,6 +17,35 @@ const CRITERION_KINDS = ["gate", "score", "informational"];
 const VALUE_TYPES = ["boolean", "number", "currency", "string", "enum", "date"];
 const CONSTRAINT_OPERATORS = ["eq", "ne", "gt", "gte", "lt", "lte", "contains", "not_contains", "in", "not_in"];
 const CLAIM_STATUSES = ["proposed", "accepted", "disputed", "rejected"];
+const OPTION_LABELS = Object.freeze({
+  gate: "Must-have",
+  score: "Scored preference",
+  informational: "Information only",
+  boolean: "Yes or no",
+  number: "Number",
+  currency: "Money",
+  string: "Text",
+  enum: "Choice list",
+  date: "Date",
+  eq: "Equals",
+  ne: "Does not equal",
+  gt: "Greater than",
+  gte: "At least",
+  lt: "Less than",
+  lte: "At most",
+  contains: "Contains",
+  not_contains: "Does not contain",
+  in: "Is one of",
+  not_in: "Is not one of",
+  proposed: "Needs review",
+  accepted: "Accepted",
+  disputed: "Disputed",
+  rejected: "Rejected",
+});
+
+function optionLabel(value) {
+  return OPTION_LABELS[value] ?? String(value).replaceAll(/[-_]/g, " ");
+}
 
 function editorId(prefix) {
   const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -264,15 +293,15 @@ export function ModelEditor({ room }) {
     <section className="typed-model-editor" aria-labelledby="typed-model-editor-title">
       <header>
         <div>
-          <span className="os-eyebrow">Atomic typed revision</span>
-          <h3 id="typed-model-editor-title">Decision model editor</h3>
-          <p>Correct inferred structure before activation. Every apply revalidates domain policy, source links, claim types, and protected fields as one revision.</p>
+          <span className="os-eyebrow">Decision details</span>
+          <h3 id="typed-model-editor-title">Options, criteria, and requirements</h3>
+          <p>Review what was imported and correct anything before analysis starts. Every saved change is checked against the decision rules and source evidence.</p>
         </div>
         <div className="typed-model-editor__counts" aria-label="Model counts">
-          <span><strong>{draft.alternatives.length}</strong> alternatives</span>
+          <span><strong>{draft.alternatives.length}</strong> options</span>
           <span><strong>{draft.criteria.length}</strong> criteria</span>
-          <span><strong>{draft.constraints.length}</strong> constraints</span>
-          <span><strong>{draft.claims.length}</strong> claims</span>
+          <span><strong>{draft.constraints.length}</strong> requirements</span>
+          <span><strong>{draft.claims.length}</strong> evidence values</span>
         </div>
       </header>
 
@@ -280,7 +309,7 @@ export function ModelEditor({ room }) {
         <aside className="model-proposal-brief" aria-labelledby="model-proposal-title">
           <IconFileDescription size={19} aria-hidden="true" />
           <div>
-            <span className="os-eyebrow">Agent draft · canonical model unchanged</span>
+            <span className="os-eyebrow">Suggested change · not yet applied</span>
             <h4 id="model-proposal-title">{room.pendingModelProposal.kind.replaceAll("_", " ")}</h4>
             <p>{room.pendingModelProposal.body}</p>
             <dl>
@@ -289,19 +318,19 @@ export function ModelEditor({ room }) {
               ))}
             </dl>
           </div>
-          <button type="button" onClick={() => decideModelProposal(room.pendingModelProposal.id, "defer")}>Return to review</button>
+          <button type="button" onClick={() => decideModelProposal(room.pendingModelProposal.id, "defer")}>Decide later</button>
         </aside>
       ) : null}
 
       <details open className="model-editor-section">
-        <summary>Alternatives <span>editable and ordered</span></summary>
+        <summary>Options <span>names and descriptions</span></summary>
         <ol className="model-editor-ledger">
           {draft.alternatives.map((alternative, index) => (
             <li key={alternative.id} className="model-editor-row model-editor-row--alternative">
               <code>{alternative.id}</code>
               <label>Name<input value={alternative.label ?? ""} maxLength={200} onChange={(event) => update("alternatives", index, { label: event.target.value })} /></label>
               <label>Description<input value={alternative.description ?? ""} maxLength={500} onChange={(event) => update("alternatives", index, { description: event.target.value })} /></label>
-              {isHealthPlan ? <label>Semantic type<select value={alternative.entityType ?? "unclassified"} onChange={(event) => update("alternatives", index, { entityType: event.target.value })}><option value="unclassified">unclassified</option><option value="insurance-plan">insurance-plan</option></select></label> : null}
+              {isHealthPlan ? <label>Record type<select value={alternative.entityType ?? "unclassified"} onChange={(event) => update("alternatives", index, { entityType: event.target.value })}><option value="unclassified">Not classified</option><option value="insurance-plan">Insurance plan</option></select></label> : null}
               {isHealthPlan ? <>
                 <label>Issuer<input value={alternative.planIdentity?.issuer ?? ""} maxLength={120} onChange={(event) => updatePlanIdentity(index, { issuer: event.target.value })} /></label>
                 <label>Plan or policy ID<input value={alternative.planIdentity?.planId ?? ""} maxLength={80} onChange={(event) => updatePlanIdentity(index, { planId: event.target.value })} /></label>
@@ -316,14 +345,14 @@ export function ModelEditor({ room }) {
       </details>
 
       <details className="model-editor-section">
-        <summary>Criteria <span>types, weights, directions, and units</span></summary>
+        <summary>Criteria <span>what matters and how much</span></summary>
         <ol className="model-editor-ledger">
           {draft.criteria.map((criterion, index) => (
             <li key={criterion.id} className="model-editor-row model-editor-row--criterion">
               <code>{criterion.id}</code>
               <label>Label<input value={criterion.label ?? ""} maxLength={200} onChange={(event) => update("criteria", index, { label: event.target.value })} /></label>
-              <label>Kind<select value={criterion.kind} onChange={(event) => update("criteria", index, { kind: event.target.value })}>{CRITERION_KINDS.map((value) => <option key={value}>{value}</option>)}</select></label>
-              <label>Value type<select value={criterion.valueType} onChange={(event) => update("criteria", index, { valueType: event.target.value })}>{VALUE_TYPES.map((value) => <option key={value}>{value}</option>)}</select></label>
+              <label>How it is used<select value={criterion.kind} onChange={(event) => update("criteria", index, { kind: event.target.value })}>{CRITERION_KINDS.map((value) => <option value={value} key={value}>{optionLabel(value)}</option>)}</select></label>
+              <label>Type of value<select value={criterion.valueType} onChange={(event) => update("criteria", index, { valueType: event.target.value })}>{VALUE_TYPES.map((value) => <option value={value} key={value}>{optionLabel(value)}</option>)}</select></label>
               {isHealthPlan ? <label>Plan aspect<select value={criterion.planAspect ?? ""} onChange={(event) => update("criteria", index, { planAspect: event.target.value })}><option value="">Choose plan term</option>{HEALTH_PLAN_CRITERION_ASPECTS.map((value) => <option value={value} key={value}>{value}</option>)}</select></label> : null}
               {isCandidateReview ? <label>Job-related aspect<select value={criterion.candidateAspect ?? ""} onChange={(event) => update("criteria", index, { candidateAspect: event.target.value })}><option value="">Choose job evidence</option>{CANDIDATE_JOB_ASPECTS.map((value) => <option value={value} key={value}>{value}</option>)}</select></label> : null}
               <label>Unit<input value={criterion.unit ?? ""} maxLength={40} onChange={(event) => update("criteria", index, { unit: event.target.value })} /></label>
@@ -338,15 +367,15 @@ export function ModelEditor({ room }) {
       </details>
 
       <details className="model-editor-section">
-        <summary>Constraints <span>typed mandatory and advisory gates</span></summary>
+        <summary>Requirements <span>must-haves and preferences</span></summary>
         <ol className="model-editor-ledger">
           {draft.constraints.map((constraint, index) => (
             <li key={constraint.id} className="model-editor-row model-editor-row--constraint">
               <code>{constraint.id}</code>
               <label>Criterion<select value={constraint.criterionId} onChange={(event) => update("constraints", index, { criterionId: event.target.value })}>{draft.criteria.map((entry) => <option value={entry.id} key={entry.id}>{entry.label}</option>)}</select></label>
-              <label>Operator<select value={constraint.operator} onChange={(event) => update("constraints", index, { operator: event.target.value })}>{CONSTRAINT_OPERATORS.map((value) => <option key={value}>{value}</option>)}</select></label>
-              <label>Expected<input value={constraint.expectedText} onChange={(event) => update("constraints", index, { expectedText: event.target.value })} /></label>
-              <label>Severity<select value={constraint.severity} onChange={(event) => update("constraints", index, { severity: event.target.value })}><option value="mandatory">mandatory</option><option value="advisory">advisory</option></select></label>
+              <label>Rule<select value={constraint.operator} onChange={(event) => update("constraints", index, { operator: event.target.value })}>{CONSTRAINT_OPERATORS.map((value) => <option value={value} key={value}>{optionLabel(value)}</option>)}</select></label>
+              <label>Required value<input value={constraint.expectedText} onChange={(event) => update("constraints", index, { expectedText: event.target.value })} /></label>
+              <label>Importance<select value={constraint.severity} onChange={(event) => update("constraints", index, { severity: event.target.value })}><option value="mandatory">Must-have</option><option value="advisory">Preference</option></select></label>
               <RowActions label={constraint.id} index={index} count={draft.constraints.length} onMove={(offset) => setDraft((current) => ({ ...current, constraints: move(current.constraints, index, offset) }))} onRemove={() => setDraft((current) => ({ ...current, constraints: current.constraints.filter((_, entryIndex) => entryIndex !== index) }))} />
             </li>
           ))}
@@ -355,7 +384,7 @@ export function ModelEditor({ room }) {
       </details>
 
       <details className="model-editor-section">
-        <summary>Claims and source anchors <span>normalized values stay tied to exact fragments</span></summary>
+        <summary>Evidence values <span>each value stays linked to its source</span></summary>
         <ol className="model-editor-ledger model-editor-ledger--claims">
           {draft.claims.map((claim, index) => (
             <li key={claim.id} className="model-editor-row model-editor-row--claim">
@@ -363,7 +392,7 @@ export function ModelEditor({ room }) {
               <label>Alternative<select value={claim.subjectId} onChange={(event) => update("claims", index, { subjectId: event.target.value })}>{draft.alternatives.map((entry) => <option value={entry.id} key={entry.id}>{entry.label}</option>)}</select></label>
               <label>Criterion<select value={claim.criterionId} onChange={(event) => update("claims", index, { criterionId: event.target.value })}>{draft.criteria.map((entry) => <option value={entry.id} key={entry.id}>{entry.label}</option>)}</select></label>
               <label>Value<input value={claim.valueText} onChange={(event) => update("claims", index, { valueText: event.target.value })} /></label>
-              <label>Status<select value={claim.status} onChange={(event) => update("claims", index, { status: event.target.value })}>{CLAIM_STATUSES.map((value) => <option key={value}>{value}</option>)}</select></label>
+              <label>Status<select value={claim.status} onChange={(event) => update("claims", index, { status: event.target.value })}>{CLAIM_STATUSES.map((value) => <option value={value} key={value}>{optionLabel(value)}</option>)}</select></label>
               <label>Confidence<input type="number" min="0" max="1" step="0.05" value={claim.confidenceText} onChange={(event) => update("claims", index, { confidenceText: event.target.value })} /></label>
               <details className="claim-source-anchors"><summary>{claim.sourceRefs?.length ?? 0} exact source anchor{claim.sourceRefs?.length === 1 ? "" : "s"}</summary>{claim.sourceRefs?.length ? <ul>{claim.sourceRefs.map((reference) => <li key={`${reference.documentId}:${reference.fragmentId}`}><code>{reference.documentId}</code><span>{reference.fragmentId}</span></li>)}</ul> : <p>Proposed values without a source cannot be accepted while source evidence is required.</p>}</details>
               <RowActions label={claim.id} index={index} count={draft.claims.length} onMove={(offset) => setDraft((current) => ({ ...current, claims: move(current.claims, index, offset) }))} onRemove={() => setDraft((current) => ({ ...current, claims: current.claims.filter((_, entryIndex) => entryIndex !== index) }))} />
@@ -374,9 +403,9 @@ export function ModelEditor({ room }) {
       </details>
 
       <footer className="typed-model-editor__actions">
-        <p>{dirty ? "Uncommitted model edits are local to this form." : "The form matches the current canonical revision."}</p>
+        <p>{dirty ? "You have unsaved changes." : "Everything is up to date."}</p>
         <button type="button" disabled={!dirty || busy} onClick={() => setDraft(createDraft(room.activeCase))}><IconRotate size={16} /> Discard edits</button>
-        <button type="button" className="is-primary" disabled={!dirty || busy} onClick={apply}><IconCheck size={16} /> Apply typed model</button>
+        <button type="button" className="is-primary" disabled={!dirty || busy} onClick={apply}><IconCheck size={16} /> Save decision details</button>
       </footer>
       {error ? <p className="workflow-desk-error" role="alert">{error}</p> : null}
     </section>

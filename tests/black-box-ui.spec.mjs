@@ -118,13 +118,13 @@ async function switchCase(page, name, domainId) {
 
 async function openSmallGenericImportReview(page, title) {
   await openNewDecision(page);
-  const dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
-  await dialog.getByLabel("Room title").fill(title);
-  await dialog.getByLabel("What should the room help decide?").fill("Compare two choices using verified cost and readiness evidence.");
-  await dialog.getByLabel("Decision domain").selectOption("generic");
-  await dialog.getByLabel("Or paste source text").fill("name,cost,ready\nAlpha,10,yes\nBeta,20,no");
-  await dialog.getByRole("button", { name: /Inspect and propose contract/ }).click();
-  await expect(dialog.getByRole("heading", { name: "Decision Contract" })).toBeVisible({ timeout: 20_000 });
+  const dialog = page.getByRole("dialog", { name: "Create a decision" });
+  await dialog.getByLabel("Decision name").fill(title);
+  await dialog.getByLabel("What should SituationRoom help you decide?").fill("Compare two choices using verified cost and readiness evidence.");
+  await dialog.getByLabel("Type of decision").selectOption("generic");
+  await dialog.getByLabel("Or paste text").fill("name,cost,ready\nAlpha,10,yes\nBeta,20,no");
+  await dialog.getByRole("button", { name: /Review and continue/ }).click();
+  await expect(dialog.getByRole("heading", { name: "Check the imported decision" })).toBeVisible({ timeout: 20_000 });
   return dialog;
 }
 
@@ -154,10 +154,10 @@ test("the Living Caseboard opens with its governance shell and no startup errors
   await expect(page.getByRole("complementary", { name: "Decision navigation" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Analysis views" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Decision workflow" })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "Decision safeguards" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Who decides" })).toBeHidden();
+  await expect(page.getByRole("complementary", { name: "Current result and checks" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes the final decision" })).toBeHidden();
   await expandFirewall(page);
-  await expect(page.getByRole("heading", { name: "Who decides" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who makes the final decision" })).toBeVisible();
   await expect(page.getByRole("region", { name: "View history" })).toBeVisible();
   await expect(page.locator(".os-red-thread")).toHaveCount(1);
   await expect(page.locator(".os-case-tab")).toHaveCount(4);
@@ -198,24 +198,24 @@ test("case routes mount one work surface and browser history restores its locati
   await expect(page.locator(".os-question-rail")).toHaveCount(1);
   await expect(page.locator(".os-workflow-desk")).toHaveCount(0);
 
-  await followWorkflow(page, /^Set up decision/);
+  await followWorkflow(page, /^Setup/);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/model$/);
   await expect.poll(async () => (await roomState(page)).capabilityPhase).toBe("contract_draft");
-  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Question and goal" })).toBeVisible();
   await expect(page.locator(".contract-desk")).toHaveCount(1);
   await expect(page.locator(".compiled-room-view, .os-question-rail, .os-history-rail, .collaboration-desk, .output-desk")).toHaveCount(0);
 
   await followWorkflow(page, /^Review/);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/review$/);
   await expect.poll(async () => (await roomState(page)).capabilityPhase).toBe("collaboration");
-  await expect(page.getByRole("heading", { name: "Human review" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible();
   await expect(page.locator(".collaboration-desk")).toHaveCount(1);
   await expect(page.locator(".compiled-room-view, .os-question-rail, .os-history-rail, .contract-desk, .output-desk")).toHaveCount(0);
 
   await page.goBack();
   await waitForRoom(page);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/model$/);
-  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Question and goal" })).toBeVisible();
 
   await page.goBack();
   await waitForRoom(page);
@@ -225,10 +225,10 @@ test("case routes mount one work surface and browser history restores its locati
   await page.goForward();
   await waitForRoom(page);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/model$/);
-  await followWorkflow(page, /^Export/);
+  await followWorkflow(page, /^Download/);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/outputs$/);
   await expect.poll(async () => (await roomState(page)).capabilityPhase).toBe("output");
-  await expect(page.getByRole("heading", { name: "Export decision" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a file type" })).toBeVisible();
   await expect(page.locator(".output-desk")).toHaveCount(1);
   await expect(page.locator(".compiled-room-view, .os-question-rail, .os-history-rail, .contract-desk, .collaboration-desk")).toHaveCount(0);
 });
@@ -318,7 +318,7 @@ test("all four room grammars recompose without changing the canonical decision",
       await expect(branch.getByText("10 weeks", { exact: true })).toBeVisible();
       await expect(branch.getByText("13 weeks", { exact: true })).toBeVisible();
       await expect(branch.getByText("≤ 12 weeks", { exact: true })).toBeVisible();
-      await expect(branch).toContainText("Top-ranked but blocked");
+      await expect(branch).toContainText("Highest score, but requirements are not met");
       await expect(branch).toContainText("Northstar Relay");
       await expect(branch).toContainText(`Version ${before.decisionRevision} unchanged`);
     }
@@ -341,7 +341,7 @@ test("a human question visibly recompiles the room while preserving decision sta
   await page.locator("#decision-question").fill(question);
   await page.locator(".os-ask-button").click();
   await waitForRoom(page);
-  await expect(page.locator(".compiled-view-heading").getByRole("heading", { name: question })).toBeVisible();
+  await expect(page.locator(".compiled-view-heading > h2")).toHaveText(question);
   const after = await roomState(page);
   expect(after.viewRevision).toBeGreaterThan(before.viewRevision);
   expect(after.decisionJson).toBe(before.decisionJson);
@@ -407,7 +407,7 @@ test("the accessible outline uses the same compiled plan and traps focus", async
   await clickRoomControl(page, /Accessible summary/);
   const dialog = page.getByRole("dialog", { name: "Accessible summary" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.locator("article.os-outline")).toContainText((await page.locator(".compiled-view-heading h2").textContent()).trim());
+  await expect(dialog.locator("article.os-outline")).toContainText((await page.locator(".compiled-view-heading > h2").textContent()).trim());
   for (let index = 0; index < 12; index += 1) await page.keyboard.press("Tab");
   expect(await dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
   await page.keyboard.press("Escape");
@@ -430,14 +430,14 @@ test("a remotely surfaced intake checkpoint replaces utility overlays and contai
       actor: { type: "agent", id: "overlay-test-agent" },
     });
   });
-  const intake = page.getByRole("dialog", { name: "Construct a new decision room" });
+  const intake = page.getByRole("dialog", { name: "Create a decision" });
   await expect(intake).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("dialog")).toHaveCount(1);
   await expect(page.getByRole("dialog", { name: "Sources" })).toHaveCount(0);
   for (let index = 0; index < 10; index += 1) await page.keyboard.press("Tab");
   expect(await intake.evaluate((node) => node.contains(document.activeElement))).toBe(true);
 
-  const discardReview = intake.getByRole("button", { name: "Discard and revise intake" });
+  const discardReview = intake.getByRole("button", { name: "Go back and edit" });
   const discardRecovery = intake.getByRole("button", { name: "Discard retained source data" });
   if (await discardReview.count()) await discardReview.click();
   else if (await discardRecovery.count()) await discardRecovery.click();
@@ -450,11 +450,11 @@ test("a remotely surfaced intake checkpoint replaces utility overlays and contai
 test("a pending import review overrides a stale case URL and remains visible after hydration", async ({ page }) => {
   await openRoom(page);
   const dialog = await openSmallGenericImportReview(page, "Hydrated import checkpoint");
-  await expect(dialog.getByRole("heading", { name: "Decision Contract" })).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Identity, field, and conflict review" })).toBeVisible();
-  await expect(dialog.getByText("Deterministic evidence stays authoritative.")).toBeVisible();
-  await expect(dialog.getByRole("list", { name: "Deterministic semantic field mappings" })).toContainText(
-    "No anchored field mapping was safe to propose.",
+  await expect(dialog.getByRole("heading", { name: "Check the imported decision" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Matches and possible conflicts" })).toBeVisible();
+  await expect(dialog.getByText(/SituationRoom only accepts matches backed by exact source locations/)).toBeVisible();
+  await expect(dialog.getByRole("list", { name: "Safely matched fields" })).toContainText(
+    "No field match had enough source evidence.",
   );
   expect(await dialog.locator(".os-semantic-intake-review > header p").evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
   expect(await dialog.locator(".os-semantic-summary dt").first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
@@ -466,9 +466,9 @@ test("a pending import review overrides a stale case URL and remains visible aft
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForRoom(page);
 
-  const restored = page.getByRole("dialog", { name: "Construct a new decision room" });
+  const restored = page.getByRole("dialog", { name: "Create a decision" });
   await expect(restored).toBeVisible();
-  await expect(restored.getByRole("heading", { name: "Decision Contract" })).toBeVisible();
+  await expect(restored.getByRole("heading", { name: "Check the imported decision" })).toBeVisible();
   expect((await roomState(page)).activeImportReview).not.toBeNull();
   await expect(page).toHaveURL(/\/new$/);
 });
@@ -497,10 +497,10 @@ test("a large standard CSV exposes complete paginated review and commits only a 
   await openRoom(page);
   const original = await roomState(page);
   await openNewDecision(page);
-  const dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
-  await dialog.getByLabel("Room title").fill("Regional field-device review");
-  await dialog.getByLabel("What should the room help decide?").fill("Compare the imported options against cost, mandatory readiness, quality, and warranty evidence.");
-  await dialog.getByLabel("Decision domain").selectOption("generic");
+  const dialog = page.getByRole("dialog", { name: "Create a decision" });
+  await dialog.getByLabel("Decision name").fill("Regional field-device review");
+  await dialog.getByLabel("What should SituationRoom help you decide?").fill("Compare the imported options against cost, mandatory readiness, quality, and warranty evidence.");
+  await dialog.getByLabel("Type of decision").selectOption("generic");
   const rows = ["name,cost,mandatory,quality,warranty"];
   for (let index = 1; index <= 25; index += 1) {
     rows.push(`Option ${String(index).padStart(2, "0")},${800 + index},${index % 4 ? "yes" : "no"},${70 + index},${12 + index}`);
@@ -510,22 +510,22 @@ test("a large standard CSV exposes complete paginated review and commits only a 
     mimeType: "text/csv",
     buffer: Buffer.from(rows.join("\n")),
   });
-  await dialog.getByRole("button", { name: /Inspect and propose contract/ }).click();
-  await expect(dialog.getByRole("heading", { name: "Decision Contract" })).toBeVisible({ timeout: 20_000 });
+  await dialog.getByRole("button", { name: /Review and continue/ }).click();
+  await expect(dialog.getByRole("heading", { name: "Check the imported decision" })).toBeVisible({ timeout: 20_000 });
 
-  const alternatives = dialog.getByRole("list", { name: "Alternatives" });
+  const alternatives = dialog.getByRole("list", { name: "Options" });
   await expect(alternatives).toContainText("Option 01");
   await expect(alternatives).not.toContainText("Option 25");
-  await dialog.getByRole("button", { name: "Show next Alternatives page" }).click();
+  await dialog.getByRole("button", { name: "Show next Options page" }).click();
   await expect(alternatives).toContainText("Option 25");
-  const evidence = dialog.getByRole("list", { name: "Evidence values and exact anchors" });
+  const evidence = dialog.getByRole("list", { name: "Evidence values and source locations" });
   await expect(evidence.locator("li")).toHaveCount(80);
-  await dialog.getByRole("button", { name: "Show next Evidence values and exact anchors page" }).click();
+  await dialog.getByRole("button", { name: "Show next Evidence values and source locations page" }).click();
   await expect(evidence).toContainText(/Option 25|alternative:option-25/i);
   expect((await roomState(page)).decisionJson).toBe(original.decisionJson);
 
-  await dialog.getByLabel(/I reviewed the complete paginated alternatives/).check();
-  await dialog.getByRole("button", { name: "Commit reviewed draft" }).click();
+  await dialog.getByLabel(/I checked the options, criteria, requirements/).check();
+  await dialog.getByRole("button", { name: "Create decision draft" }).click();
   await expect(dialog).toBeHidden({ timeout: 20_000 });
   const committed = await roomState(page);
   expect(committed.title).toBe("Regional field-device review");
@@ -533,7 +533,7 @@ test("a large standard CSV exposes complete paginated review and commits only a 
   expect(committed.capabilityPhase).toBe("contract_draft");
   expect(committed.caseId).not.toBe(original.caseId);
   await expect(page).toHaveURL(new RegExp(`/cases/${encodeURIComponent(committed.caseId)}/model$`));
-  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Question and goal" })).toBeVisible();
   await expect(page.locator(".os-missing-route")).toHaveCount(0);
 });
 
@@ -541,13 +541,13 @@ test("unsafe unstructured candidate material fails into a discardable recovery c
   await openRoom(page);
   const original = await roomState(page);
   await openNewDecision(page);
-  const dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
-  await dialog.getByLabel("Room title").fill("Blinded candidate evidence review");
-  await dialog.getByLabel("What should the room help decide?").fill("Organize verified job-related TypeScript evidence for a blinded human panel.");
-  await dialog.getByLabel("Decision domain").selectOption("candidate-review");
-  await dialog.getByLabel("Or paste source text").fill("Jane Smith is 36 and pregnant. She has six years of TypeScript experience.");
-  await dialog.getByRole("button", { name: /Inspect and propose contract/ }).click();
-  await expect(dialog.getByRole("heading", { name: "Domain-safe mapping cannot proceed" })).toBeVisible({ timeout: 20_000 });
+  const dialog = page.getByRole("dialog", { name: "Create a decision" });
+  await dialog.getByLabel("Decision name").fill("Blinded candidate evidence review");
+  await dialog.getByLabel("What should SituationRoom help you decide?").fill("Organize verified job-related TypeScript evidence for a blinded human panel.");
+  await dialog.getByLabel("Type of decision").selectOption("candidate-review");
+  await dialog.getByLabel("Or paste text").fill("Jane Smith is 36 and pregnant. She has six years of TypeScript experience.");
+  await dialog.getByRole("button", { name: /Review and continue/ }).click();
+  await expect(dialog.getByRole("heading", { name: "These files cannot be imported safely" })).toBeVisible({ timeout: 20_000 });
   await expect(dialog).toContainText(/isolated|blinded|policy-compliant structured extraction/i);
   const during = await roomState(page);
   expect(during.decisionJson).toBe(original.decisionJson);
@@ -562,8 +562,8 @@ test("failed pre-commit deletion stays visible and can be resumed without trappi
   await openRoom(page);
   let dialog = await openSmallGenericImportReview(page, "Discard recovery exercise");
   await failIndexedDbSourceDeletion(page);
-  await dialog.getByRole("button", { name: "Discard and revise intake" }).click();
-  await expect(dialog.getByRole("heading", { name: "Retained source data needs a decision" })).toBeVisible({ timeout: 20_000 });
+  await dialog.getByRole("button", { name: "Go back and edit" }).click();
+  await expect(dialog.getByRole("heading", { name: "Choose what to do with these source files" })).toBeVisible({ timeout: 20_000 });
   await expect(dialog).toContainText(/could not be completely removed/i);
   await dialog.getByRole("button", { name: "Return to room" }).click();
   await expect(dialog).toBeHidden();
@@ -573,7 +573,7 @@ test("failed pre-commit deletion stays visible and can be resumed without trappi
 
   await restoreIndexedDbSourceDeletion(page);
   await docket.getByRole("button", { name: "Review import" }).click();
-  dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
+  dialog = page.getByRole("dialog", { name: "Create a decision" });
   await dialog.getByRole("button", { name: "Discard retained source data" }).click();
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await expect(dialog).toBeHidden();
@@ -583,13 +583,13 @@ test("failed pre-commit deletion stays visible and can be resumed without trappi
 test("post-commit cleanup failure leaves a nonblocking durable docket and never replays the commit", async ({ page }) => {
   await openRoom(page);
   let dialog = await openSmallGenericImportReview(page, "Cleanup recovery exercise");
-  await dialog.getByLabel(/I reviewed the complete paginated alternatives/).check();
+  await dialog.getByLabel(/I checked the options, criteria, requirements/).check();
   await failIndexedDbSourceDeletion(page);
-  await dialog.getByRole("button", { name: "Commit reviewed draft" }).click();
-  await expect(dialog.getByRole("heading", { name: "Canonical commit complete; source cleanup pending" })).toBeVisible({ timeout: 20_000 });
+  await dialog.getByRole("button", { name: "Create decision draft" }).click();
+  await expect(dialog.getByRole("heading", { name: "Decision saved; source cleanup still needed" })).toBeVisible({ timeout: 20_000 });
   const committed = await roomState(page);
   await dialog.getByRole("button", { name: "Retry retained-source cleanup" }).click();
-  await expect(dialog.getByRole("heading", { name: "Canonical commit complete; source cleanup pending" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Decision saved; source cleanup still needed" })).toBeVisible();
   expect((await roomState(page)).decisionRevision).toBe(committed.decisionRevision);
   await dialog.getByRole("button", { name: "Return to room" }).click();
   const docket = page.locator(".os-recovery-docket");
@@ -598,7 +598,7 @@ test("post-commit cleanup failure leaves a nonblocking durable docket and never 
 
   await restoreIndexedDbSourceDeletion(page);
   await docket.getByRole("button", { name: "Review import" }).click();
-  dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
+  dialog = page.getByRole("dialog", { name: "Create a decision" });
   await dialog.getByRole("button", { name: "Retry retained-source cleanup" }).click();
   await expect(dialog).toBeHidden({ timeout: 20_000 });
   await expect(docket).toHaveCount(0);
@@ -608,8 +608,8 @@ test("post-commit cleanup failure leaves a nonblocking durable docket and never 
 test("the typed contract must be reactivated after a human draft edit", async ({ page }) => {
   await openRoom(page);
   await switchCase(page, CASE_NAMES.generic, "generic");
-  await followWorkflow(page, /^Set up decision/);
-  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
+  await followWorkflow(page, /^Setup/);
+  await expect(page.getByRole("heading", { name: "Question and goal" })).toBeVisible();
   const question = page.getByLabel("Decision question");
   await question.fill("Which portable workstation is feasible after independently verified repairability evidence?");
   const before = await roomState(page);
@@ -617,7 +617,7 @@ test("the typed contract must be reactivated after a human draft edit", async ({
   await expect.poll(async () => (await roomState(page)).contractStatus).toBe("draft");
   const draft = await roomState(page);
   expect(draft.decisionRevision).toBe(before.decisionRevision + 1);
-  await expect(page.getByRole("button", { name: "Finish setup before review" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Finish setup first" })).toBeDisabled();
   await page.getByRole("button", { name: "Start analysis", exact: true }).click();
   await expect.poll(async () => (await roomState(page)).contractStatus).toBe("active");
   expect((await roomState(page)).decisionRevision).toBe(draft.decisionRevision + 1);
@@ -626,20 +626,20 @@ test("the typed contract must be reactivated after a human draft edit", async ({
 test("typed model validation is atomic and a valid edit persists as one revision", async ({ page }) => {
   await openRoom(page);
   await switchCase(page, CASE_NAMES.generic, "generic");
-  await followWorkflow(page, /^Set up decision/);
+  await followWorkflow(page, /^Setup/);
   const before = await roomState(page);
-  const claims = page.locator("details.model-editor-section").filter({ hasText: "Claims and source anchors" });
+  const claims = page.locator("details.model-editor-section").filter({ hasText: "Evidence values" });
   await claims.locator(":scope > summary").click();
   await claims.getByLabel("Confidence").first().fill("1.5");
-  await page.getByRole("button", { name: "Apply typed model" }).click();
+  await page.getByRole("button", { name: "Save decision details" }).click();
   await expect(page.getByRole("alert")).toContainText(/confidence must be between zero and one/i);
   expect((await roomState(page)).decisionRevision).toBe(before.decisionRevision);
 
   await page.getByRole("button", { name: "Discard edits" }).click();
-  const alternatives = page.locator("details.model-editor-section").filter({ hasText: /^Alternatives/ });
+  const alternatives = page.locator("details.model-editor-section").filter({ hasText: /^Options/ });
   const revisedName = "Field-tested Workstation Alpha";
   await alternatives.getByLabel("Name").first().fill(revisedName);
-  await page.getByRole("button", { name: "Apply typed model" }).click();
+  await page.getByRole("button", { name: "Save decision details" }).click();
   await expect.poll(async () => (await roomState(page)).decisionRevision).toBe(before.decisionRevision + 1);
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForRoom(page);
@@ -648,7 +648,7 @@ test("typed model validation is atomic and a valid edit persists as one revision
 
 test("human approval requires a fresh confirmation every time the dialog opens", async ({ page }) => {
   await openRoom(page);
-  const trigger = page.getByRole("button", { name: "Review decision" });
+  const trigger = page.getByRole("button", { name: "Review and approve" });
   await trigger.click();
   let dialog = page.getByRole("dialog", { name: "Approve this decision" });
   const commit = dialog.getByRole("button", { name: "Approve decision" });
@@ -667,7 +667,7 @@ test("candidate review exposes requirement evidence without a machine outcome", 
   await openRoom(page);
   await switchCase(page, CASE_NAMES.candidate, "candidate-review");
   const room = await roomState(page);
-  const firewall = page.getByRole("complementary", { name: "Decision safeguards" });
+  const firewall = page.getByRole("complementary", { name: "Current result and checks" });
   await expect(firewall).toContainText("Automatic ranking is off");
   await expandFirewall(page);
   await expect(firewall).toContainText("Required job evidence");
@@ -685,10 +685,10 @@ test("the complete review backlog remains paginated and durable without local-st
   await openRoom(page);
   await followWorkflow(page, /^Review/);
   const desk = page.locator(".collaboration-desk");
-  const note = desk.getByRole("textbox", { name: "Review note" });
+  const note = desk.getByRole("textbox", { name: "Add a note" });
   for (let index = 0; index < 8; index += 1) {
     await note.fill(`Durable review entry ${index}`);
-    await desk.getByRole("button", { name: "Stage for review" }).click();
+    await desk.getByRole("button", { name: "Add to review" }).click();
   }
   const pager = desk.getByRole("navigation", { name: "Human review pages" });
   await expect(pager).toContainText("Page 1 of 2 · 8 entries");
@@ -742,9 +742,9 @@ test("health-plan and generic rooms remain general, domain-specific, and reload 
 test("prepared packets are revision-bound and only download after a human click", async ({ page }) => {
   await openRoom(page);
   const before = await roomState(page);
-  await followWorkflow(page, /^Export/);
-  await expect(page.getByRole("heading", { name: "Export decision" })).toBeVisible();
-  await page.getByRole("button", { name: /json Portable JSON/i }).click();
+  await followWorkflow(page, /^Download/);
+  await expect(page.getByRole("heading", { name: "Choose a file type" })).toBeVisible();
+  await page.getByRole("button", { name: /json Structured data/i }).click();
   const item = page.locator(".prepared-output-ledger li").first();
   await expect(item).toContainText(`r${before.decisionRevision}`);
   const downloadPromise = page.waitForEvent("download");
@@ -783,14 +783,14 @@ test("the full manual workflow remains operational when WebMCP is absent", async
     }
   });
   await openRoom(page);
-  await expect(page.locator(".os-webmcp-state")).toContainText("Site tools unavailable");
+  await expect(page.locator(".os-webmcp-state")).toContainText("Browser agent not connected");
   expect(await page.evaluate(() => window.__situationRoom.getState().webMcp.available)).toBe(false);
   await followLens(page, /Compare options/);
   await expect(page.locator('[data-layout-pattern="matrix"]')).toBeVisible();
   await followWorkflow(page, /^Review/);
-  await expect(page.getByRole("heading", { name: "Human review" })).toBeVisible();
-  await followWorkflow(page, /^Export/);
-  await expect(page.getByRole("heading", { name: "Export decision" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Review queue" })).toBeVisible();
+  await followWorkflow(page, /^Download/);
+  await expect(page.getByRole("heading", { name: "Choose a file type" })).toBeVisible();
 });
 
 test("tablet composition keeps compact governance inside the single routed stage", async ({ page }) => {
@@ -810,7 +810,7 @@ test("tablet composition keeps compact governance inside the single routed stage
   expect(geometry.overflow).toBe(0);
   expect(geometry.firewallInsideStage).toBe(true);
   expect(geometry.firewallWithinStageWidth).toBe(true);
-  await expect(page.getByRole("complementary", { name: "Decision safeguards" })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Current result and checks" })).toBeVisible();
 });
 
 test("destructive reset requires confirmation and reseeds the four clean rooms", async ({ page }) => {
@@ -819,7 +819,7 @@ test("destructive reset requires confirmation and reseeds the four clean rooms",
   const question = "Prepare a reset verification view with the current evidence.";
   await page.locator("#decision-question").fill(question);
   await page.locator(".os-ask-button").click();
-  await expect(page.locator(".compiled-view-heading").getByRole("heading", { name: question })).toBeVisible();
+  await expect(page.locator(".compiled-view-heading > h2")).toHaveText(question);
   await waitForRoom(page);
   const changed = await roomState(page);
   expect(changed.viewRevision).toBeGreaterThan(initial.viewRevision);

@@ -647,7 +647,8 @@
 .formulary-table thead tr > :first-child { z-index: 3; background: var(--composition-paper-deep); }
 .compiled-comparison-table th span { display: block; margin-top: 4px; color: var(--composition-muted); font-size: 0.75rem; font-weight: 400; }
 .compiled-comparison-table td > span:not(.instrument-status) { display: block; margin: 6px 0; color: var(--composition-muted); font-size: 0.75rem; line-height: 1.35; }
-.compiled-comparison-table td > strong { font-family: var(--composition-mono); font-size: 0.75rem; }
+.compiled-comparison-table td > .instrument-status { display: flex; margin-bottom: 7px; }
+.compiled-comparison-table td > strong { display: block; font-family: var(--composition-mono); font-size: 0.75rem; }
 .instrument-overflow-note { margin: 8px 0 0; color: var(--composition-muted); font-size: 0.75rem; }
 
 .score-breakdown-list li,
@@ -907,4 +908,80 @@
   .compiled-council-convergence span {
     border-color: CanvasText;
   }
+}
+
+/* Clear route hierarchy: the page owns the title; the compiled view only names the active question. */
+.compiled-view-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) minmax(220px, 0.55fr);
+  align-items: center;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+  padding: 9px 0;
+  border-top: 1px solid var(--composition-rule-light);
+  border-bottom: 1px solid var(--composition-rule-light);
+}
+
+.compiled-view-heading > h2 {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--composition-serif);
+  font-size: 0.9rem;
+  line-height: 1.25;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compiled-view-heading p {
+  overflow: hidden;
+  font-size: 0.75rem;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compiled-scenario-workbench,
+.compiled-brief-sheet {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(360px, 1.1fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.compiled-scenario-workbench .scenario-canonical-plane,
+.compiled-scenario-workbench .scenario-staged-plane,
+.compiled-brief-sheet .council-mandate-plane,
+.compiled-brief-sheet .council-recommendation-plane {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+}
+
+.compiled-brief-sheet .council-recommendation-plane {
+  position: sticky;
+  top: 82px;
+}
+
+.comparison-scroll-hint {
+  display: none;
+  margin: 0 0 7px;
+  color: var(--composition-muted);
+  font-size: 0.75rem;
+}
+
+@media (max-width: 760px) {
+  .compiled-view-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 8px;
+  }
+
+  .compiled-view-heading > h2 { white-space: normal; }
+  .compiled-view-heading p { display: none; }
+  .compiled-scenario-workbench,
+  .compiled-brief-sheet { grid-template-columns: minmax(0, 1fr); }
+  .compiled-brief-sheet .council-recommendation-plane { position: static; }
+  .comparison-scroll-hint { display: block; }
 }

@@ -101,18 +101,18 @@ if (externalUrl) {
       await page.locator("#os-utility-menu").getByRole("button", { name: /New decision/ }).click();
     }
     await page.waitForURL(/\/new$/);
-    const dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
-    await dialog.getByLabel("Room title").fill("Live OCR verification");
+    const dialog = page.getByRole("dialog", { name: "Create a decision" });
+    await dialog.getByLabel("Decision name").fill("Live OCR verification");
     await dialog.getByLabel("What should the room help decide?").fill("Compare Alpha and Beta using the imported cost evidence.");
-    await dialog.getByLabel("Decision domain").selectOption("generic");
+    await dialog.getByLabel("Type of decision").selectOption("generic");
     await dialog.locator('input[type="file"]').setInputFiles({
       name: "live-ocr-verification.png",
       mimeType: "image/png",
       buffer: Buffer.from(ocrDataUrl.split(",")[1], "base64"),
     });
-    await dialog.getByRole("button", { name: /Inspect and propose contract/ }).click();
+    await dialog.getByRole("button", { name: /Review and continue/ }).click();
     try {
-      await dialog.getByRole("heading", { name: "Decision Contract" }).waitFor({ timeout: 90_000 });
+      await dialog.getByRole("heading", { name: "Check the imported decision" }).waitFor({ timeout: 90_000 });
     } catch (error) {
       const diagnostic = await page.evaluate(() => {
         const room = window.__situationRoom?.getState?.();

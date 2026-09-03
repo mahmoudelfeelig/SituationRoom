@@ -96,36 +96,36 @@ export function WebMcpEvaluationConsole({ room }) {
   return (
     <section className="os-model-eval" aria-labelledby="model-eval-heading">
       <header>
-        <div><span className="os-eyebrow">Actual model evidence</span><h3 id="model-eval-heading"><IconFlask size={19} /> Codex Site-tools acceptance console</h3></div>
-        <p>This console never simulates a pass. Arm it, give the exact prompt to Codex in the browser side panel, and it scores only tool calls the page actually received.</p>
+        <div><span className="os-eyebrow">Real browser-agent test</span><h3 id="model-eval-heading"><IconFlask size={19} /> Test SituationRoom with Codex</h3></div>
+        <p>Start a live test, copy the prompt into Codex, and SituationRoom will check only the actions the browser actually received.</p>
       </header>
       <div className="os-model-eval__setup">
-        <label>Acceptance case<select value={selectedId} onChange={(event) => { setSelectedId(event.target.value); setArmed(null); setCopied(false); }}>{WEBMCP_EVAL_CASES.map((task) => <option value={task.id} key={task.id}>{humanize(task.id)}</option>)}</select></label>
+        <label>Demo task<select value={selectedId} onChange={(event) => { setSelectedId(event.target.value); setArmed(null); setCopied(false); }}>{WEBMCP_EVAL_CASES.map((task) => <option value={task.id} key={task.id}>{humanize(task.id)}</option>)}</select></label>
         <dl>
-          <div><dt>Required context</dt><dd>{selected.initialState.domain} · {selected.initialState.lens} · {selected.initialState.phase}</dd></div>
-          <div><dt>Current context</dt><dd>{room.activeCase?.domain?.packId} · {room.lens} · {room.frozen ? "frozen" : room.capabilityPhase}</dd></div>
+          <div><dt>Task needs</dt><dd>{selected.initialState.domain} · {selected.initialState.lens} · {selected.initialState.phase}</dd></div>
+          <div><dt>You are here</dt><dd>{room.activeCase?.domain?.packId} · {room.lens} · {room.frozen ? "frozen" : room.capabilityPhase}</dd></div>
         </dl>
-        <span className={`os-model-eval__context ${matches ? "is-ready" : "is-mismatch"}`}>{matches ? "Context ready" : "Open the matching synthetic case and lens first"}</span>
+        <span className={`os-model-eval__context ${matches ? "is-ready" : "is-mismatch"}`}>{matches ? "Ready to run" : "Open the matching example and view first"}</span>
       </div>
       <blockquote>{selected.prompt}</blockquote>
       <div className="os-model-eval__actions">
-        <button type="button" onClick={copyPrompt}><IconClipboard size={16} /> {copied ? "Prompt copied" : "Copy exact prompt"}</button>
-        <button type="button" className="is-primary" disabled={!matches || !room.webMcp.available} onClick={armCapture}><IconPlayerPlay size={16} /> {armed?.id === selected.id ? "Restart capture" : "Arm live capture"}</button>
-        <button type="button" disabled={!armed || !calls.length || !armedCaseIsActive} onClick={downloadEvidence}><IconDownload size={16} /> Export evidence</button>
+        <button type="button" onClick={copyPrompt}><IconClipboard size={16} /> {copied ? "Prompt copied" : "Copy test prompt"}</button>
+        <button type="button" className="is-primary" disabled={!matches || !room.webMcp.available} onClick={armCapture}><IconPlayerPlay size={16} /> {armed?.id === selected.id ? "Restart live test" : "Start live test"}</button>
+        <button type="button" disabled={!armed || !calls.length || !armedCaseIsActive} onClick={downloadEvidence}><IconDownload size={16} /> Download test record</button>
       </div>
-      {!room.webMcp.available ? <p className="os-model-eval__notice">Site tools are unavailable in this browser context. No model-run claim can be captured here.</p> : null}
-      {armed && !armedCaseIsActive ? <p className="os-model-eval__notice">This capture belongs to another case. Return to that exact case or restart capture here before exporting evidence.</p> : null}
+      {!room.webMcp.available ? <p className="os-model-eval__notice">Browser tools are not available here, so a real Codex run cannot be recorded in this browser.</p> : null}
+      {armed && !armedCaseIsActive ? <p className="os-model-eval__notice">This test belongs to another decision. Return to it or restart the test here.</p> : null}
       <div className="os-model-eval__contract">
-        <section><h4>Expected tool sequence</h4><ol>{selected.expectedCalls.map((call) => <li key={call.name}><strong>{humanize(call.name)}</strong><span>{call.argumentsMustInclude?.length ? call.argumentsMustInclude.join(" · ") : "No required arguments"}</span></li>)}</ol></section>
-        <section><h4>Forbidden authority</h4><p>{selected.forbiddenCalls.join(" · ")}</p><small>{selected.success}</small></section>
+        <section><h4>Actions Codex should take</h4><ol>{selected.expectedCalls.map((call) => <li key={call.name}><strong>{humanize(call.name)}</strong><span>{call.argumentsMustInclude?.length ? call.argumentsMustInclude.join(" · ") : "No required details"}</span></li>)}</ol></section>
+        <section><h4>Actions Codex must not take</h4><p>{selected.forbiddenCalls.join(" · ")}</p><small>{selected.success}</small></section>
       </div>
       {armed?.id === selected.id ? (
         <div className={`os-model-eval__result status-${score.status}`} role="status">
-          <header><span>{score.status === "passed" ? <IconCheck size={18} /> : <IconFlask size={18} />}</span><div><span className="os-eyebrow">Live result</span><strong>{humanize(score.status)} · {Math.round(score.score * 100)}%</strong></div><em>{score.callsObserved} calls observed</em></header>
+          <header><span>{score.status === "passed" ? <IconCheck size={18} /> : <IconFlask size={18} />}</span><div><span className="os-eyebrow">Live result</span><strong>{humanize(score.status)} · {Math.round(score.score * 100)}%</strong></div><em>{score.callsObserved} actions recorded</em></header>
           <ol>{score.expected.map((result) => <li key={result.name} className={`status-${result.status}`}><strong>{humanize(result.name)}</strong><span>{result.status}{result.missingArguments.length ? ` · missing ${result.missingArguments.join(", ")}` : ""}{result.constraintFailures.length ? " · argument constraint failed" : ""}</span></li>)}</ol>
-          {score.forbiddenCalls.length ? <p>Forbidden calls observed: {score.forbiddenCalls.join(" · ")}</p> : null}
+          {score.forbiddenCalls.length ? <p>Disallowed actions recorded: {score.forbiddenCalls.join(" · ")}</p> : null}
         </div>
-      ) : <p className="os-model-eval__notice">Capture is not armed. Existing receipts are intentionally excluded so a previous manual test cannot be mistaken for this model run.</p>}
+      ) : <p className="os-model-eval__notice">No live test is running. Previous browser actions will not be counted.</p>}
     </section>
   );
 }

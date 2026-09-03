@@ -1,24 +1,22 @@
-import { IconGitBranch } from "@tabler/icons-react";
-import { CompiledViewHeading, InstrumentRegion, instrumentsInRegion } from "./LayoutPrimitives.jsx";
+import { CompiledViewHeading, InstrumentRegion } from "./LayoutPrimitives.jsx";
+
+const CONTROL_TYPES = new Set(["scenario-controls", "concession-set", "utilization-scenario"]);
+const OUTCOME_TYPES = new Set(["outcome-seal"]);
 
 export function SimulateLayout({ plan, headingId, renderInstrument }) {
-  const canonical = instrumentsInRegion(plan, "primary");
-  const staged = instrumentsInRegion(plan, "secondary");
-  const supporting = instrumentsInRegion(plan, "supporting");
+  const controls = plan.instruments.filter((instrument) => CONTROL_TYPES.has(instrument.type));
+  const outcomes = plan.instruments.filter((instrument) => OUTCOME_TYPES.has(instrument.type));
+  const supporting = plan.instruments.filter((instrument) => !CONTROL_TYPES.has(instrument.type) && !OUTCOME_TYPES.has(instrument.type));
   return (
     <section className="compiled-layout compiled-layout-simulate" aria-labelledby={headingId} data-layout-pattern="fork">
-      <CompiledViewHeading plan={plan} headingId={headingId} kicker="Your question" />
-      <div className="compiled-scenario-fold">
-        <InstrumentRegion label="Current result" region="primary" instruments={canonical} renderInstrument={renderInstrument} className="scenario-canonical-plane" />
-        <div className="compiled-fold-spine" aria-label={`Scenario based on decision version ${plan.baseDecisionRevision}`}>
-          <IconGitBranch size={23} aria-hidden="true" />
-          <span>Compared with decision version {plan.baseDecisionRevision}</span>
-        </div>
-        <InstrumentRegion label="Scenario changes" region="secondary" instruments={staged} renderInstrument={renderInstrument} className="scenario-staged-plane" />
+      <CompiledViewHeading plan={plan} headingId={headingId} kicker="Answering" />
+      <div className="compiled-scenario-workbench">
+        <InstrumentRegion label="Try a change" region="primary" instruments={controls} renderInstrument={renderInstrument} className="scenario-staged-plane" />
+        <InstrumentRegion label="Scenario result" region="secondary" instruments={outcomes} renderInstrument={renderInstrument} className="scenario-canonical-plane" />
       </div>
       {supporting.length ? (
         <details className="compiled-supporting-details">
-          <summary><span>Show detailed results</span><strong>{supporting.length} sections</strong></summary>
+          <summary><span>Detailed scenario results</span><strong>{supporting.length} sections</strong></summary>
           <div className="compiled-supporting-details__body"><InstrumentRegion label="Detailed scenario results" region="supporting" instruments={supporting} renderInstrument={renderInstrument} className="scenario-outcome-rail" /></div>
         </details>
       ) : null}

@@ -76,7 +76,7 @@ function Control({ item, instrument, snapshot, onAction }) {
         </label>
       )}
       {attributes.baseline !== undefined ? (
-        <small className="scenario-baseline">Canonical baseline: {formatCanonicalValue(attributes.baseline, attributes.unit, snapshot.metadata?.locale)}</small>
+        <small className="scenario-baseline">Current value: {formatCanonicalValue(attributes.baseline, attributes.unit, snapshot.metadata?.locale)}</small>
       ) : null}
     </div>
   );
@@ -103,25 +103,25 @@ export function ScenarioControlsInstrument({ snapshot, instrument, onAction, tit
   return (
     <InstrumentFrame
       instrument={instrument}
-      kicker="Hypothetical inputs"
+      kicker="Try a change"
       title={title}
       status="hypothetical"
-      description="These controls stage a scenario and never overwrite the canonical record."
+      description="Test an assumption without changing the saved decision."
     >
       {controls.length ? (
         <div className="scenario-control-grid">
           {controls.map((item) => <Control key={item.id} item={item} instrument={instrument} snapshot={snapshot} onAction={onAction} />)}
         </div>
       ) : <EmptyInstrumentState>No trusted scenario controls are available for this case.</EmptyInstrumentState>}
-      <div className="canonical-lock-note"><IconLock size={18} aria-hidden="true" /> Decision revision {snapshot.decisionRevision} remains unchanged</div>
+      <div className="canonical-lock-note"><IconLock size={18} aria-hidden="true" /> Your saved decision stays unchanged</div>
     </InstrumentFrame>
   );
 }
 
 export function ConcessionSetInstrument(props) {
-  return <ScenarioControlsInstrument {...props} title="Minimum concession set" />;
+  return <ScenarioControlsInstrument {...props} title="Smallest changes that could work" />;
 }
 
 export function UtilizationScenarioInstrument(props) {
-  return <ScenarioControlsInstrument {...props} title="Health-plan utilization scenario" />;
+  return <ScenarioControlsInstrument {...props} title="Try a healthcare use scenario" />;
 }

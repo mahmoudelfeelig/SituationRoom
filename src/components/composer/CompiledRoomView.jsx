@@ -47,7 +47,7 @@ export function CompiledRoomView({ snapshot, plan, onAction, className = "" }) {
   const generatedId = useId();
   const headingId = `compiled-room-${generatedId.replaceAll(":", "")}`;
 
-  if (!snapshot || !plan) return <InvalidPlan message="A canonical snapshot and compiled plan are required." />;
+  if (!snapshot || !plan) return <InvalidPlan message="The decision information needed for this view is missing." />;
   if (plan.schemaVersion !== PRESENTATION_SCHEMA_VERSION) {
     return <InvalidPlan message={`Unsupported plan schema: ${String(plan.schemaVersion)}.`} />;
   }
@@ -92,7 +92,7 @@ export function CompiledRoomView({ snapshot, plan, onAction, className = "" }) {
       {viewOutOfSequence ? (
         <div className="compiled-stale-banner" role="status">
           <IconAlertTriangle size={18} aria-hidden="true" />
-          <span>This view is outside the current presentation sequence. Its decision data remains canonical.</span>
+          <span>This is an older saved view. The underlying decision information has not changed.</span>
         </div>
       ) : null}
       <PlanWarnings warnings={plan.warnings} />

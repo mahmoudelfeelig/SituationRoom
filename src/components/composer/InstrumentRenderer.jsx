@@ -7,7 +7,7 @@ function UnsupportedInstrument({ instrument }) {
   return (
     <section className="instrument-render-fallback" role="status" data-instrument-id={instrument.id}>
       <strong>{definition?.label || "Unsupported instrument"}</strong>
-      <span>This presentation primitive is unavailable. Canonical data remains accessible through full context.</span>
+      <span>This section could not be displayed. The underlying decision information is still available in the full view.</span>
     </section>
   );
 }
@@ -24,4 +24,3 @@ export function InstrumentRenderer({ snapshot, instrument, onAction }) {
     </InstrumentBoundary>
   );
 }
-

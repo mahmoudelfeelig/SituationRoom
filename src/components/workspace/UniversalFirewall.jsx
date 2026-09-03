@@ -51,24 +51,18 @@ export function UniversalFirewall({ room }) {
     Boolean(recommendation?.eligible);
 
   return (
-    <aside className="os-firewall" aria-label="Decision safeguards">
-      <div className="os-firewall__title">
-        <span className="os-eyebrow">Required checks</span>
-        <h2>Decision safeguards</h2>
-        <span className={`os-risk-stamp risk-${domain.riskLevel}`}>Rules active</span>
-      </div>
-
+    <aside className="os-firewall" aria-label="Current result and checks">
       <section className="os-firewall__section os-firewall__verdict" aria-labelledby="verdict-heading">
         <div className="os-section-heading">
           <IconScale size={18} />
-          <h3 id="verdict-heading">Current outcome</h3>
+          <h3 id="verdict-heading">Current result</h3>
         </div>
         {rankingAllowed && recommendation ? (
           <>
-            <span className="os-verdict-label">Best supported option</span>
+            <span className="os-verdict-label">Best supported choice</span>
             <strong className="os-verdict-name">{recommendation.alternative.label}</strong>
             <span className={`os-verdict-status ${recommendation.eligible ? "is-pass" : "is-blocked"}`}>
-              {statusLabel(recommendation)}{Number.isFinite(recommendation.score) ? ` · ${recommendation.score}` : ""}
+              {statusLabel(recommendation)}{Number.isFinite(recommendation.score) ? ` · score ${recommendation.score}` : ""}
             </span>
           </>
         ) : (
@@ -78,20 +72,7 @@ export function UniversalFirewall({ room }) {
             <span className="os-verdict-status is-review">Evidence is organized, but no shortlist was chosen</span>
           </>
         )}
-        <div className="os-firewall__metrics">
-          {candidateReview ? (
-            <>
-              <span><strong>{candidateNotDemonstrated}</strong> not demonstrated</span>
-              <span><strong>{candidateUnresolved}</strong> unresolved</span>
-            </>
-          ) : (
-            <>
-              <span><strong>{evaluation.blockerCount}</strong> blockers</span>
-              <span><strong>{evaluation.unresolvedCount}</strong> unanswered</span>
-            </>
-          )}
-          <span><strong>{room.pins.length}</strong> pins</span>
-        </div>
+        {candidateReview ? <div className="os-firewall__metrics"><span><strong>{candidateNotDemonstrated}</strong> not demonstrated</span><span><strong>{candidateUnresolved}</strong> unanswered</span></div> : null}
       </section>
 
       {decisionCase.domain.packId === "candidate-review" ? (
@@ -106,25 +87,25 @@ export function UniversalFirewall({ room }) {
           disabled={!canApprove}
         >
           <IconLock size={17} />
-          {approved ? "Decision approved" : room.frozen ? "Changes paused" : decisionCase.contract.status === "draft" ? "Finish setup before review" : canApprove ? "Review decision" : "Review unavailable"}
+          {approved ? "Decision approved" : room.frozen ? "Changes paused" : decisionCase.contract.status === "draft" ? "Finish setup first" : canApprove ? "Review and approve" : "Approval unavailable"}
         </button>
       )}
 
       <details className="os-firewall-details">
         <summary>
           <IconShieldCheck size={18} />
-          <span>Why this result is allowed or blocked</span>
-          <strong>{mandatory.length}</strong>
+          <span>How this was checked</span>
+          <strong>{mandatory.length} requirement{mandatory.length === 1 ? "" : "s"}</strong>
         </summary>
         <div className="os-firewall-details__body">
           <section className="os-authority-rail" aria-labelledby="authority-heading">
             <div className="os-section-heading">
               <IconUserCheck size={18} />
-              <h3 id="authority-heading">Who decides</h3>
+              <h3 id="authority-heading">Who makes the final decision</h3>
             </div>
             <strong>{domain.authorityLabel}</strong>
             <dl>
-              <div><dt>Decision type</dt><dd>{decisionCase.contract.authority.mode}</dd></div>
+              <div><dt>Review mode</dt><dd>{decisionCase.contract.authority.mode.replaceAll("_", " ").replaceAll("-", " ")}</dd></div>
               <div><dt>Region</dt><dd>{decisionCase.locale || "Not specified"}</dd></div>
               <div><dt>What the agent can do</dt><dd>Analyze and prepare changes</dd></div>
             </dl>
@@ -133,7 +114,7 @@ export function UniversalFirewall({ room }) {
           <section className="os-firewall__section" aria-labelledby="gates-heading">
             <div className="os-section-heading">
               <IconShieldCheck size={18} />
-              <h3 id="gates-heading">{candidateReview ? "Required job evidence" : "Required checks"}</h3>
+              <h3 id="gates-heading">{candidateReview ? "Required job evidence" : "Must-have requirements"}</h3>
               <span>{mandatory.length}</span>
             </div>
             <ul className="os-gate-ledger">
@@ -156,7 +137,7 @@ export function UniversalFirewall({ room }) {
                     <strong>{affected.length ? `${affected.length} blocked` : "Clear"}</strong>
                   </li>
                 );
-              }) : <li className="is-clear"><IconCheck size={16} /><span>No mandatory gates declared</span></li>}
+              }) : <li className="is-clear"><IconCheck size={16} /><span>No must-have requirements were added</span></li>}
             </ul>
           </section>
 
