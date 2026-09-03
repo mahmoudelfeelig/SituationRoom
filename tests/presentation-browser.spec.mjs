@@ -55,7 +55,12 @@ test("Chrome mobile layout keeps complete context reachable without page overflo
 
   for (const lens of ["investigate", "compare", "simulate", "brief"]) {
     await page.getByRole("button", { name: lens }).click();
-    await expect(page.locator(".compiled-view-receipt")).toBeVisible();
+    const technicalDetails = page.locator(".compiled-view-record");
+    await expect(technicalDetails).toBeVisible();
+    if (!(await technicalDetails.evaluate((element) => element.open))) {
+      await technicalDetails.getByText("Technical view details").click();
+    }
+    await expect(technicalDetails.locator(".compiled-view-receipt")).toBeVisible();
     const overflow = await page.evaluate(() => ({
       scrollWidth: document.documentElement.scrollWidth,
       clientWidth: document.documentElement.clientWidth,
@@ -64,7 +69,7 @@ test("Chrome mobile layout keeps complete context reachable without page overflo
   }
 
   await page.getByRole("button", { name: "compare" }).click();
-  const comparisonRegion = page.getByRole("region", { name: "Aligned alternative comparison" });
+  const comparisonRegion = page.getByRole("region", { name: "Compare the options" });
   await expect(comparisonRegion).toBeVisible();
   await comparisonRegion.focus();
   await expect(comparisonRegion).toBeFocused();
@@ -74,7 +79,7 @@ test("Chrome mobile layout keeps complete context reachable without page overflo
   }));
   expect(stageOverflow.scrollWidth).toBeLessThanOrEqual(stageOverflow.clientWidth + 1);
   await page.getByRole("button", { name: "investigate" }).click();
-  const evidenceLedger = page.getByRole("region", { name: /Evidence excerpts, 9 canonical items/ });
+  const evidenceLedger = page.getByRole("region", { name: /Evidence excerpts, 9 saved items/ });
   await expect(evidenceLedger).toBeVisible();
   await evidenceLedger.focus();
   await expect(evidenceLedger).toBeFocused();

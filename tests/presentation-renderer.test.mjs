@@ -246,7 +246,7 @@ test("long canonical ledgers remain complete inside a labelled keyboard-scrollab
     assert.equal(compiled.ok, true, compiled.errors?.join("\n"));
     const html = renderToStaticMarkup(React.createElement(CompiledRoomView, { snapshot, plan: compiled.plan }));
     assert.match(html, /class="instrument-bounded-region"/);
-    assert.match(html, /aria-label="Evidence excerpts, 10 canonical items"/);
+    assert.match(html, /aria-label="Evidence excerpts, 10 saved items"/);
     assert.match(html, /data-bounded-item-count="10"/);
     assert.match(html, /Canonical evidence row 10/);
   } finally {

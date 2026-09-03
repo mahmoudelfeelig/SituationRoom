@@ -120,7 +120,7 @@ export function AccessibleOutline({ room }) {
                   return <li key={`${reference.kind}:${reference.id}`}><strong>{item?.label ?? reference.id}</strong><span>{item?.summary ?? item?.formattedValue ?? humanize(item?.status ?? reference.kind)}</span></li>;
                 })}
               </ul>
-              {(instrument.entityRefs?.length ?? 0) > 16 ? <p>{instrument.entityRefs.length - 16} more canonical items remain reachable in the full room.</p> : null}
+              {(instrument.entityRefs?.length ?? 0) > 16 ? <p>{instrument.entityRefs.length - 16} more saved items remain available in the full view.</p> : null}
             </section>
           ))}
         </article>

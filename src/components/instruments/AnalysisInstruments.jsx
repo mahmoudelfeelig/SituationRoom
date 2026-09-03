@@ -37,7 +37,7 @@ function maximaByUnit(results) {
   return maxima;
 }
 
-export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Aligned alternative comparison" }) {
+export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Compare the options" }) {
   const limit = getLimit(instrument, 12);
   const alternatives = sortCanonical(alternativesFor(snapshot, instrument), instrument.options?.sort).slice(0, limit);
   const criteria = criteriaFor(snapshot, instrument).slice(0, limit);

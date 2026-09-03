@@ -49,7 +49,7 @@ export function BoundedInstrumentRegion({ children, itemCount, label, threshold 
       className="instrument-bounded-region"
       tabIndex="0"
       role="region"
-      aria-label={`${label}, ${itemCount} canonical items`}
+      aria-label={`${label}, ${itemCount} saved items`}
       data-bounded-item-count={itemCount}
     >
       <p className="instrument-bounded-region__notice">
