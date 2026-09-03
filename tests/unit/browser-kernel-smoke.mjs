@@ -96,7 +96,7 @@ if (externalUrl) {
     if (await newDocketLink.isVisible()) {
       await newDocketLink.click();
     } else {
-      const roomControls = page.getByRole("button", { name: "Room controls", exact: true });
+      const roomControls = page.getByRole("button", { name: "More", exact: true });
       if (await roomControls.getAttribute("aria-expanded") !== "true") await roomControls.click();
       await page.locator("#os-utility-menu").getByRole("button", { name: /New decision/ }).click();
     }

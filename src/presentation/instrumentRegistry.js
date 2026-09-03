@@ -44,7 +44,7 @@ function definition({
 const definitions = [
   definition({
     type: "protected-invariants",
-    label: "Protected invariants",
+    label: "Required checks",
     description: "Shows protected constraints, blockers, authority, and prohibited inputs.",
     options: ["density", "limit"],
     protectedType: true,
@@ -101,14 +101,14 @@ const definitions = [
   }),
   definition({
     type: "contradiction-docket",
-    label: "Contradiction docket",
+    label: "Conflicting evidence",
     description: "Pairs supporting and opposing canonical claims without resolving them silently.",
     lenses: ["investigate", "compare", "brief"],
     options: ["density", "limit", "showCitations", "showConfidence"],
   }),
   definition({
     type: "missing-evidence",
-    label: "Missing-evidence docket",
+    label: "Missing evidence",
     description: "Lists unresolved, low-confidence, unreadable, or absent evidence.",
     options: ["density", "limit", "sort", "showConfidence"],
   }),
@@ -177,7 +177,7 @@ const definitions = [
   }),
   definition({
     type: "data-quality-docket",
-    label: "Data quality docket",
+    label: "Data quality issues",
     description: "Summarizes parse quality, missing fields, conflicts, and stale data.",
     options: ["density", "limit", "sort", "showConfidence"],
   }),
@@ -231,7 +231,7 @@ const definitions = [
   }),
   definition({
     type: "missing-verification-docket",
-    label: "Missing verification docket",
+    label: "Missing verification",
     description: "Candidate claims that require verification or human follow-up.",
     lenses: ["investigate", "compare", "brief"],
     domains: ["candidate"],

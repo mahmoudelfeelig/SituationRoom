@@ -12,8 +12,8 @@ export function InvestigateLayout({ plan, headingId, renderInstrument }) {
   const supporting = instrumentsInRegion(plan, "supporting");
   return (
     <section className="compiled-layout compiled-layout-investigate" aria-labelledby={headingId} data-layout-pattern="trace">
-      <CompiledViewHeading plan={plan} headingId={headingId} kicker="Causal investigation" />
-      <section className="compiled-primary-trace" aria-label="Source-to-outcome causal path">
+      <CompiledViewHeading plan={plan} headingId={headingId} kicker="Your question" />
+      <section className="compiled-primary-trace" aria-label="Evidence behind the result">
         {primary.map((instrument, index) => (
           <div className="compiled-trace-step" key={instrument.id}>
             <div className="compiled-instrument-slot" style={instrumentTransitionStyle(instrument)}>{renderInstrument(instrument)}</div>
@@ -21,8 +21,15 @@ export function InvestigateLayout({ plan, headingId, renderInstrument }) {
           </div>
         ))}
       </section>
-      <InstrumentRegion label="Supporting investigation exhibits" region="secondary" instruments={secondary} renderInstrument={renderInstrument} className="investigation-secondary-docket" />
-      <InstrumentRegion label="Protected and contextual exhibits" region="supporting" instruments={supporting} renderInstrument={renderInstrument} className="investigation-supporting-rail" />
+      {secondary.length + supporting.length ? (
+        <details className="compiled-supporting-details">
+          <summary><span>Show more evidence and checks</span><strong>{secondary.length + supporting.length} sections</strong></summary>
+          <div className="compiled-supporting-details__body">
+            <InstrumentRegion label="More evidence" region="secondary" instruments={secondary} renderInstrument={renderInstrument} className="investigation-secondary-docket" />
+            <InstrumentRegion label="Rules and context" region="supporting" instruments={supporting} renderInstrument={renderInstrument} className="investigation-supporting-rail" />
+          </div>
+        </details>
+      ) : null}
     </section>
   );
 }

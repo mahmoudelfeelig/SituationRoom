@@ -33,7 +33,7 @@ export function DecisionFirewall() {
       <header className="firewall-header">
         <IconShieldLock size={22} />
         <div>
-          <h2 id="firewall-heading">Decision Firewall</h2>
+          <h2 id="firewall-heading">Decision safeguards</h2>
           <p>Invariant policy edge</p>
         </div>
       </header>

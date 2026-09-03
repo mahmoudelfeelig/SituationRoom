@@ -424,11 +424,11 @@ export function IntakeWorkbench({ room }) {
             </div>
           </section>
           <section className="os-staged-files" aria-label="Staged files">
-            <div><h3>Staged docket</h3><span>{files.length} files · {formatBytes(totalBytes)}</span></div>
+            <div><h3>Files to review</h3><span>{files.length} files · {formatBytes(totalBytes)}</span></div>
             <ul>
               {files.map((file, index) => <li key={`${file.name}:${file.size}:${index}`} data-source-id={sourceIdForLocalFile(file)}><IconFile size={17} /><span><strong>{file.name}</strong><small>{file.type || "signature detected during import"} · {formatBytes(file.size)} · {sourceIdForLocalFile(file)}</small></span><button type="button" onClick={() => { unstageLocalSources([file]); setFiles(files.filter((_, itemIndex) => itemIndex !== index)); }}>Remove</button></li>)}
             </ul>
-            {!files.length ? <p>No local files staged. Pasted text can still create a reviewed generic docket.</p> : null}
+            {!files.length ? <p>No local files added. You can still paste text and review it before importing.</p> : null}
             {files.length ? (
               <div className="os-agent-source-authority">
                 <IconShieldLock size={18} />

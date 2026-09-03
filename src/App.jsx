@@ -52,39 +52,39 @@ import {
 
 const ROUTE_COPY = Object.freeze({
   model: {
-    eyebrow: "Decision definition",
-    title: "Define the decision before judging it",
-    description: "Set the question, authority boundary, alternatives, criteria, and mandatory gates that every later view must respect.",
+    eyebrow: "Set up",
+    title: "Define the decision",
+    description: "Set the question, options, criteria, and required checks.",
   },
   investigate: {
-    eyebrow: "Causal trace",
-    title: "Trace what drives this decision",
-    description: "Follow claims through criteria and source anchors to see where the current outcome comes from.",
+    eyebrow: "Evidence",
+    title: "Review the evidence",
+    description: "See which sources support each claim and where information is missing.",
   },
   compare: {
-    eyebrow: "Aligned comparison",
-    title: "Compare the evidence on one scale",
-    description: "Inspect tradeoffs criterion by criterion without hiding blockers, conflicts, or missing evidence.",
+    eyebrow: "Comparison",
+    title: "Compare the options",
+    description: "See every option against the same criteria.",
   },
   simulate: {
-    eyebrow: "Scenario fork",
-    title: "Stress-test the decision under change",
-    description: "Change declared assumptions and see which conclusions move, which remain stable, and why.",
+    eyebrow: "What if",
+    title: "Try different scenarios",
+    description: "Change an assumption and see how the result responds.",
   },
   brief: {
-    eyebrow: "Decision council",
-    title: "Assemble the case for human judgment",
-    description: "Condense the governing evidence, dissent, uncertainties, and next actions into one reviewable brief.",
+    eyebrow: "Summary",
+    title: "Review the decision summary",
+    description: "See the recommendation, remaining concerns, and next steps in one place.",
   },
   review: {
-    eyebrow: "Human checkpoint",
-    title: "Resolve the questions only people can decide",
-    description: "Review staged requests, dissent, and approval-sensitive actions without allowing the agent to cross the authority boundary.",
+    eyebrow: "Human review",
+    title: "Review requests that need a person",
+    description: "Resolve open questions and approval-sensitive actions.",
   },
   outputs: {
-    eyebrow: "Packet press",
-    title: "Prepare a governed decision packet",
-    description: "Preview and export traceable artifacts bound to the current decision revision and evidence record.",
+    eyebrow: "Export",
+    title: "Download the decision",
+    description: "Create a file that includes the evidence and current decision version.",
   },
 });
 
@@ -136,7 +136,7 @@ function BootSurface({ status, error, onRetry, onReset }) {
               <button type="button" className="os-button-secondary" disabled={Boolean(busyAction)} onClick={() => setResetArmed(true)}>Reset local workspace</button>
             ) : (
               <div className="os-boot-reset-confirm" role="group" aria-label="Confirm local workspace reset">
-                <p>This erases local cases, imports, receipts, and prepared outputs on this browser.</p>
+                <p>This erases local decisions, imports, activity, and prepared files in this browser.</p>
                 <button type="button" className="os-button-secondary" disabled={Boolean(busyAction)} onClick={() => setResetArmed(false)}>Keep local data</button>
                 <button type="button" className="os-button-primary" disabled={Boolean(busyAction)} onClick={() => run("reset", onReset)}>
                   {busyAction === "reset" ? "Erasing local workspace" : "Confirm erase and reseed"}
@@ -156,7 +156,7 @@ function BootSurface({ status, error, onRetry, onReset }) {
 function ViewHistoryRail({ room }) {
   return (
     <details className="os-history-rail" role="region" aria-label="View history">
-      <summary><IconHistory size={17} /><span>View ledger</span><strong>{room.history.length}</strong><small>Presentation history, separate from the decision record</small></summary>
+      <summary><IconHistory size={17} /><span>Saved views</span><strong>{room.history.length}</strong><small>Return to an earlier page layout</small></summary>
       <div className="os-history-rail__body">
         <div className="os-history-track">
           {room.history.map((entry, index) => (
@@ -172,7 +172,7 @@ function ViewHistoryRail({ room }) {
               <small>{entry.plan.question}</small>
             </button>
           ))}
-          {!room.history.length ? <p>The first agent or manual recomposition will create an immutable view receipt here.</p> : null}
+          {!room.history.length ? <p>Saved views will appear here.</p> : null}
         </div>
         <button type="button" className="os-save-view" onClick={saveCurrentView} disabled={!room.plan}><IconRestore size={17} /> Save current view</button>
       </div>
@@ -185,18 +185,18 @@ function QuestionComposer({ room, domain, draft, setDraft, asking, ask, onSubmit
     <section className="os-question-rail" aria-labelledby="decision-question-label">
       <IconSearch size={21} aria-hidden="true" />
       <form onSubmit={onSubmit}>
-        <label id="decision-question-label" htmlFor="decision-question">Manual view shortcut</label>
+        <label id="decision-question-label" htmlFor="decision-question">Ask about this decision</label>
         <input
           id="decision-question"
-          aria-label="Manually recompose the room to investigate, compare, simulate, or brief"
+          aria-label="Ask SituationRoom to update this view"
           value={draft}
           onChange={(event) => setDraft(event.target.value)}
           maxLength={240}
           disabled={asking || room.frozen}
         />
-        <button className="os-ask-button" type="submit" aria-label="Rebuild room" disabled={asking || room.frozen || !draft.trim()}>
+        <button className="os-ask-button" type="submit" aria-label="Update view" disabled={asking || room.frozen || !draft.trim()}>
           {asking ? <IconSparkles className="is-spinning" size={19} /> : <IconSend size={19} />}
-          {asking ? "Compiling" : "Manual rebuild"}
+          {asking ? "Updating" : "Update view"}
         </button>
       </form>
       <details className="os-question-prompts">
@@ -211,9 +211,9 @@ function CaseArchive({ room, navigate }) {
   return (
     <main className="os-archive-page" id="decision-stage" tabIndex="-1">
       <header className="os-archive-heading">
-        <div><span className="os-eyebrow">Decision archive</span><h2 data-route-heading tabIndex="-1">Open a case file</h2></div>
-        <p>Each docket keeps its evidence, governance, presentation history, and prepared outputs separate.</p>
-        <a href="/new" onClick={(event) => { if (prefersNativeLinkNavigation(event)) return; event.preventDefault(); void navigate({ kind: "new" }); }}><IconFilePlus size={18} /> Construct a new decision</a>
+        <div><span className="os-eyebrow">All decisions</span><h2 data-route-heading tabIndex="-1">Choose a decision</h2></div>
+        <p>Each decision keeps its own evidence, rules, history, and exports.</p>
+        <a href="/new" onClick={(event) => { if (prefersNativeLinkNavigation(event)) return; event.preventDefault(); void navigate({ kind: "new" }); }}><IconFilePlus size={18} /> New decision</a>
       </header>
       <ol className="os-archive-ledger">
         {room.workspace.cases.map((item, index) => {
@@ -236,10 +236,10 @@ function CaseArchive({ room, navigate }) {
 function MissingRoute({ navigate }) {
   return (
     <main className="os-missing-route" id="decision-stage" tabIndex="-1">
-      <span className="os-eyebrow">Unfiled route</span>
-      <h2 data-route-heading tabIndex="-1">This case location does not exist.</h2>
-      <p>No decision data was changed. Return to the archive and choose a known docket.</p>
-      <a href="/cases" onClick={(event) => { if (prefersNativeLinkNavigation(event)) return; event.preventDefault(); void navigate({ kind: "archive" }); }}><IconFiles size={18} /> Open decision archive</a>
+      <span className="os-eyebrow">Page not found</span>
+      <h2 data-route-heading tabIndex="-1">We could not find this page.</h2>
+      <p>Your decision was not changed. Return to the list and choose another page.</p>
+      <a href="/cases" onClick={(event) => { if (prefersNativeLinkNavigation(event)) return; event.preventDefault(); void navigate({ kind: "archive" }); }}><IconFiles size={18} /> View all decisions</a>
     </main>
   );
 }
@@ -304,7 +304,7 @@ export function App() {
     }
     const workspaceLabel = route.kind === "case"
       ? route.workspace === "analyze" ? route.lens : route.workspace
-      : "Decision OS";
+      : "Decision workspace";
     document.title = `${room.activeCase.title} · ${workspaceLabel} · SituationRoom`;
   }, [room.activeCase, room.bootStatus, route]);
 
@@ -400,17 +400,17 @@ export function App() {
       <header className="os-header">
         <div className="brand-lockup">
           <h1 className="brand-name">Situation<span>Room</span></h1>
-          <span className="brand-mode">Decision OS</span>
+          <span className="brand-mode">Decision workspace</span>
         </div>
         <div className="os-case-identity">
-          <span className="os-eyebrow">{visibleRoute.kind === "archive" ? "Decision archive" : `Active docket · ${domain.label}`}</span>
+          <span className="os-eyebrow">{visibleRoute.kind === "archive" ? "All decisions" : `Current decision · ${domain.label}`}</span>
           <strong>{visibleRoute.kind === "archive" ? "All case files" : room.activeCase.title}</strong>
-          <span>{visibleRoute.kind === "archive" ? `${room.workspace.cases.length} governed decisions in this browser` : room.activeCase.subtitle}</span>
+          <span>{visibleRoute.kind === "archive" ? `${room.workspace.cases.length} decisions saved in this browser` : room.activeCase.subtitle}</span>
         </div>
         <div className="os-header-ledger">
           <span title={`Case updated ${formatDate(room.activeCase.updatedAt)}`}><IconFingerprint size={15} /> r<strong>{room.activeCase.revision}</strong> · v<strong>{room.viewRevision}</strong></span>
           <span className={`os-webmcp-state ${room.webMcp.available ? "is-live" : ""}`}>
-            {room.webMcp.available ? `${room.webMcp.toolCount} contextual tools` : "Manual parity active"}
+            {room.webMcp.available ? `${room.webMcp.toolCount} site tools ready` : "Site tools unavailable"}
           </span>
         </div>
         {caseWorkspaceVisible ? (
@@ -421,18 +421,18 @@ export function App() {
             aria-expanded={roomMapOpen}
             aria-controls="workspace-navigation"
             onClick={() => setRoomMapOpen((value) => !value)}
-          ><IconRoute size={19} /><span>Room map</span></button>
+          ><IconRoute size={19} /><span>Navigate</span></button>
         ) : null}
         <button type="button" className="utility-menu-button" aria-expanded={utilityOpen} aria-controls="os-utility-menu" onClick={() => setUtilityOpen((value) => !value)}>
-          {utilityOpen ? <IconX size={20} /> : <IconMenu2 size={20} />}<span>Room controls</span>
+          {utilityOpen ? <IconX size={20} /> : <IconMenu2 size={20} />}<span>More</span>
         </button>
         <div className={`os-header-actions ${utilityOpen ? "is-open" : ""}`} id="os-utility-menu">
           <button type="button" onClick={async () => { setUtilityOpen(false); try { await toggleFreeze(); } catch (error) { setActionError(error instanceof Error ? error.message : String(error)); } }} aria-pressed={room.frozen} disabled={room.activeCase.status === "approved"}>
-            {room.frozen ? <IconLock size={17} /> : <IconLockOpen size={17} />}{room.frozen ? "Frozen" : "Freeze"}
+            {room.frozen ? <IconLock size={17} /> : <IconLockOpen size={17} />}{room.frozen ? "Resume changes" : "Pause changes"}
           </button>
-          <button type="button" onClick={() => { setUtilityOpen(false); toggleOutline(true); }}><IconBook2 size={17} /> Accessible outline</button>
-          <button type="button" onClick={() => { setUtilityOpen(false); toggleSourceDrawer(true); }}><IconArchive size={17} /> Source archive</button>
-          <button type="button" onClick={() => { setUtilityOpen(false); toggleAudit(true); }}><IconHistory size={17} /> Decision ledger</button>
+          <button type="button" onClick={() => { setUtilityOpen(false); toggleOutline(true); }}><IconBook2 size={17} /> Accessible summary</button>
+          <button type="button" onClick={() => { setUtilityOpen(false); toggleSourceDrawer(true); }}><IconArchive size={17} /> Sources</button>
+          <button type="button" onClick={() => { setUtilityOpen(false); toggleAudit(true); }}><IconHistory size={17} /> Activity history</button>
           <button type="button" onClick={() => { setUtilityOpen(false); toggleReducedMotion(); }} aria-pressed={room.reducedMotion}><IconSnowflake size={17} /> Reduced motion {room.reducedMotion ? "on" : "off"}</button>
           <button type="button" onClick={() => { setUtilityOpen(false); void navigate({ kind: "new" }); }}><IconFilePlus size={17} /> New decision</button>
           <a href="/source/SituationRoom-source.tar.gz" download>Corresponding source</a>
@@ -451,12 +451,12 @@ export function App() {
         <div className="os-recovery-docket" role="alert">
           <IconAlertTriangle size={20} aria-hidden="true" />
           <div>
-            <strong>{room.activeImportReview.cleanupPending ? "Retained-source cleanup is pending" : "Import recovery requires human attention"}</strong>
+            <strong>{room.activeImportReview.cleanupPending ? "A source file still needs to be removed" : "This import needs your attention"}</strong>
             <span>{room.activeImportReview.cleanupPending
-              ? "The canonical decision is available, but local source deletion has not been verified. Agent mutations remain retired."
-              : "Retained source material remains isolated until you retry or verify deletion."}</span>
+              ? "The decision is available, but the local source file may not have been deleted. Agent changes remain paused."
+              : "The source material remains separate until you retry or confirm deletion."}</span>
           </div>
-          <button type="button" onClick={() => void navigate({ kind: "new" })}>Open recovery docket</button>
+          <button type="button" onClick={() => void navigate({ kind: "new" })}>Review import</button>
         </div>
       ) : null}
 
@@ -472,7 +472,7 @@ export function App() {
         ) : <MissingRoute navigate={navigate} />
       ) : (
         <div className="os-room-shell" data-route-workspace={visibleRoute.workspace} data-navigating={isNavigating ? "true" : "false"}>
-          <button className={`os-navigation-backdrop ${roomMapOpen ? "is-visible" : ""}`} type="button" aria-label="Close room map" tabIndex={roomMapOpen ? 0 : -1} onClick={() => { setRoomMapOpen(false); roomMapButtonRef.current?.focus(); }} />
+          <button className={`os-navigation-backdrop ${roomMapOpen ? "is-visible" : ""}`} type="button" aria-label="Close navigation" tabIndex={roomMapOpen ? 0 : -1} onClick={() => { setRoomMapOpen(false); roomMapButtonRef.current?.focus(); }} />
           <WorkspaceSpine
             room={room}
             route={visibleRoute}
@@ -504,7 +504,7 @@ export function App() {
                 {room.compositionPhase !== "idle" ? (
                   <div className={`os-composition-strip phase-${room.compositionPhase}`} role="status">
                     <span className="os-composition-pulse"><IconBolt size={18} /></span>
-                    <div><span className="os-eyebrow">Deterministic view compiler</span><strong>{room.compositionMessage}</strong></div>
+                    <div><span className="os-eyebrow">Updating this page</span><strong>{room.compositionMessage}</strong></div>
                     <button type="button" onClick={cancelComposition}>{room.compositionPhase === "rejected" ? "Keep previous room" : "Cancel"}</button>
                   </div>
                 ) : null}
@@ -542,7 +542,7 @@ export function App() {
           <IconRefresh size={28} aria-hidden="true" />
           <div>
             <strong>This permanently removes this browser's local SituationRoom data.</strong>
-            <p>Cases, imported evidence, receipts, prepared outputs, and saved views will be erased. External source files are not touched. The page then reloads the four clean demonstration rooms.</p>
+            <p>Decisions, imported evidence, activity history, exports, and saved views will be erased. External source files are not touched. The page will then reload the four example decisions.</p>
           </div>
         </div>
         {resetError ? <p className="workflow-desk-error" role="alert">{resetError}</p> : null}

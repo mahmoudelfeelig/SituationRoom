@@ -64,29 +64,29 @@ export const DOMAIN_CONFIG = Object.freeze({
 export const LENS_CONFIG = Object.freeze({
   investigate: Object.freeze({
     id: "investigate",
-    label: "Trace",
-    longLabel: "Causal trace",
+    label: "Evidence",
+    longLabel: "Review evidence",
     pattern: "trace",
     density: "focused",
   }),
   compare: Object.freeze({
     id: "compare",
     label: "Compare",
-    longLabel: "Aligned comparison",
+    longLabel: "Compare options",
     pattern: "matrix",
     density: "dense",
   }),
   simulate: Object.freeze({
     id: "simulate",
     label: "Simulate",
-    longLabel: "Scenario fork",
+    longLabel: "Try scenarios",
     pattern: "fork",
     density: "balanced",
   }),
   brief: Object.freeze({
     id: "brief",
     label: "Brief",
-    longLabel: "Decision council",
+    longLabel: "Decision summary",
     pattern: "council",
     density: "balanced",
   }),
@@ -95,4 +95,3 @@ export const LENS_CONFIG = Object.freeze({
 export function getDomainConfig(packId) {
   return DOMAIN_CONFIG[packId] ?? DOMAIN_CONFIG.generic;
 }
-

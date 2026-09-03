@@ -63,9 +63,9 @@ function ContractDesk({ room }) {
     <section className="os-workflow-desk contract-desk" aria-labelledby="contract-desk-title">
       <div className="workflow-desk-index"><span>01</span><IconFileDescription size={21} /></div>
       <div className="workflow-desk-copy">
-        <span className="os-eyebrow">Human-governed model</span>
-        <h2 id="contract-desk-title">Decision contract</h2>
-        <p>Agents may propose structure. Only this visible surface can activate the governing question and objective.</p>
+        <span className="os-eyebrow">You stay in control</span>
+        <h2 id="contract-desk-title">Decision setup</h2>
+        <p>Set the question and goal. An agent can suggest changes, but only you can accept them.</p>
       </div>
       <div className="contract-fields">
         <label>Decision question<input value={question} maxLength={500} onChange={(event) => setQuestion(event.target.value)} /></label>
@@ -74,7 +74,7 @@ function ContractDesk({ room }) {
       <div className="workflow-desk-actions">
         <button type="button" onClick={() => toggleIntake(true)}><IconArchive size={17} /> Import sources</button>
         <button type="button" disabled={busy} onClick={() => commit(false)}><IconFileDescription size={17} /> Save draft</button>
-        <button type="button" className="is-primary" disabled={busy || !room.activeCase.alternatives.length || !room.activeCase.criteria.length} onClick={() => commit(true)}><IconShieldCheck size={17} /> Activate contract</button>
+        <button type="button" className="is-primary" disabled={busy || !room.activeCase.alternatives.length || !room.activeCase.criteria.length} onClick={() => commit(true)}><IconShieldCheck size={17} /> Start analysis</button>
       </div>
       <ModelEditor room={room} />
       {error ? <p className="workflow-desk-error" role="alert">{error}</p> : null}
@@ -143,9 +143,9 @@ function CollaborationDesk({ room }) {
     <section className="os-workflow-desk collaboration-desk" aria-labelledby="collaboration-desk-title">
       <div className="workflow-desk-index"><span>02</span><IconMessage2 size={21} /></div>
       <div className="workflow-desk-copy">
-        <span className="os-eyebrow">Attribution remains visible</span>
-        <h2 id="collaboration-desk-title">Review exchange</h2>
-        <p>Comments, resolution requests, and branch proposals are staged. None can impersonate a human decision.</p>
+        <span className="os-eyebrow">For people to decide</span>
+        <h2 id="collaboration-desk-title">Human review</h2>
+        <p>Review comments, open questions, and suggested changes before anything is accepted.</p>
       </div>
       <div className="review-composer">
         <select aria-label="Review artifact type" value={kind} onChange={(event) => setKind(event.target.value)}>
@@ -192,7 +192,7 @@ function CollaborationDesk({ room }) {
         {!visible.length ? <li className="is-empty">The review exchange is empty. Every new entry will carry its author and decision revision.</li> : null}
       </ol>
       {ordered.length > REVIEW_PAGE_SIZE ? (
-        <nav className="workflow-pager" aria-label="Review exchange pages">
+        <nav className="workflow-pager" aria-label="Human review pages">
           <button type="button" disabled={artifactPage === 0} onClick={() => setArtifactPage((current) => current - 1)}>Previous</button>
           <span>Page {artifactPage + 1} of {artifactPageCount} · {ordered.length} entries</span>
           <button type="button" disabled={artifactPage + 1 >= artifactPageCount} onClick={() => setArtifactPage((current) => current + 1)}>Next</button>
@@ -231,9 +231,9 @@ function OutputDesk({ room }) {
     <section className="os-workflow-desk output-desk" aria-labelledby="output-desk-title">
       <div className="workflow-desk-index"><span>03</span><IconDownload size={21} /></div>
       <div className="workflow-desk-copy">
-        <span className="os-eyebrow">Revision-bound local artifacts</span>
-        <h2 id="output-desk-title">Packet press</h2>
-        <p>Each artifact carries the exact decision digest and anchored evidence. Connected agents may prepare; only a person downloads.</p>
+        <span className="os-eyebrow">Current decision version</span>
+        <h2 id="output-desk-title">Export decision</h2>
+        <p>Every file includes the supporting evidence and exact decision version. An agent can prepare it; only you can download it.</p>
       </div>
       <div className="output-format-rail" aria-label="Prepare export format">
         {EXPORT_FORMATS.map(([format, label]) => <button type="button" key={format} disabled={Boolean(busyFormat)} onClick={() => prepare(format)}><span>{format}</span><strong>{label}</strong></button>)}
@@ -246,7 +246,7 @@ function OutputDesk({ room }) {
             <button type="button" onClick={() => downloadPreparedOutput(artifact.id)}><IconDownload size={15} /> Download</button>
           </li>
         ))}
-        {!room.outputArtifacts.length ? <li className="is-empty">No packet has been prepared for this session.</li> : null}
+        {!room.outputArtifacts.length ? <li className="is-empty">No export has been prepared yet.</li> : null}
       </ol>
       {room.outputArtifacts.length > OUTPUT_PAGE_SIZE ? (
         <nav className="workflow-pager" aria-label="Prepared output pages">

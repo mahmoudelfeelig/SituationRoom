@@ -14,16 +14,16 @@ function humanize(value) {
 }
 
 function statusCopy(status) {
-  if (status === "running") return "Working through the governed tool surface";
-  if (status === "rejected") return "Last tool call was safely rejected";
-  if (status === "settled") return "Latest tool sequence settled visibly";
-  return "Ready for a browser-agent request";
+  if (status === "running") return "The agent is working";
+  if (status === "rejected") return "The last request was blocked safely";
+  if (status === "settled") return "The agent finished its latest request";
+  return "Ready for an agent request";
 }
 
 function diffCopy(diff) {
   if (diff?.decisionChanged && diff?.viewChanged) return "Decision and view changed";
-  if (diff?.decisionChanged) return "Canonical decision changed";
-  if (diff?.viewChanged) return "View changed; decision stayed fixed";
+  if (diff?.decisionChanged) return "Decision information changed";
+  if (diff?.viewChanged) return "Page changed; decision stayed the same";
   return "Decision and view stayed fixed";
 }
 
@@ -56,20 +56,20 @@ export function AgentActivityRibbon({ room, domain }) {
   return (
     <section
       className={`os-agent-wire status-${activity?.status ?? "idle"}`}
-      aria-labelledby="browser-agent-channel"
+      aria-labelledby="agent-status-heading"
       aria-live="polite"
     >
       <header className="os-agent-wire__header">
         <IconRobot size={20} aria-hidden="true" />
         <div>
-          <span className="os-eyebrow">Browser-agent channel</span>
-          <strong id="browser-agent-channel">{statusCopy(activity?.status)}</strong>
+          <span className="os-eyebrow">Agent activity</span>
+          <strong id="agent-status-heading">{statusCopy(activity?.status)}</strong>
         </div>
-        <span>{room.webMcp.toolCount} contextual site tools</span>
+        <span>{room.webMcp.toolCount} site tools ready</span>
       </header>
 
       {recentSteps.length ? (
-        <ol className="os-agent-wire__track" aria-label="Recent browser-agent tool activity">
+        <ol className="os-agent-wire__track" aria-label="Recent agent activity">
           {recentSteps.map((step, index) => (
             <li key={step.id} className={`status-${step.status}`}>
               <span className="os-agent-wire__node" aria-hidden="true">{index + 1}</span>
@@ -86,8 +86,8 @@ export function AgentActivityRibbon({ room, domain }) {
         </ol>
       ) : (
         <div className="os-agent-wire__ready">
-          <p><strong>The page is listening for a real Site-tools request.</strong><span>Ask Codex from its browser side panel; each tool call and resulting change will appear on this red thread.</span></p>
-          <button type="button" onClick={copyPrompt}><IconCopy size={16} /> {copied ? "Demo request copied" : "Copy live demo request"}</button>
+          <p><strong>This page is ready for an agent.</strong><span>Ask from a browser that supports WebMCP. Changes will appear here as they happen.</span></p>
+          <button type="button" onClick={copyPrompt}><IconCopy size={16} /> {copied ? "Request copied" : "Copy example request"}</button>
         </div>
       )}
 
@@ -95,11 +95,11 @@ export function AgentActivityRibbon({ room, domain }) {
         <aside className="os-agent-wire__diff" aria-label="Latest agent result">
           <IconArrowsDiff size={18} aria-hidden="true" />
           <div>
-            <span className="os-eyebrow">Receipt-backed result</span>
+            <span className="os-eyebrow">Latest result</span>
             <strong>{diffCopy(activity.lastDiff)}</strong>
             {activity.lastDiff.changedEntityIds.length
-              ? <small>{activity.lastDiff.changedEntityIds.length} canonical {activity.lastDiff.changedEntityIds.length === 1 ? "entity" : "entities"} changed</small>
-              : <small>No canonical changes inferred</small>}
+              ? <small>{activity.lastDiff.changedEntityIds.length} decision {activity.lastDiff.changedEntityIds.length === 1 ? "item" : "items"} changed</small>
+              : <small>No decision facts changed</small>}
           </div>
         </aside>
       ) : null}

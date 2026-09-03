@@ -106,7 +106,7 @@ function expectWorkspaceUnchanged(after, before) {
 }
 
 async function openRoomControls(page) {
-  const toggle = page.getByRole("button", { name: "Room controls", exact: true });
+  const toggle = page.getByRole("button", { name: "More", exact: true });
   if (await toggle.getAttribute("aria-expanded") !== "true") await toggle.click();
   await expect(page.locator("#os-utility-menu")).toHaveClass(/is-open/);
 }
@@ -274,7 +274,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(afterCompose.lens).toBe("compare");
   await expect(page.locator(".os-header-ledger")).toContainText(`v${afterCompose.viewRevision}`);
   await expect(page.locator(".os-agent-wire")).toBeVisible();
-  await expect(page.getByRole("list", { name: "Recent browser-agent tool activity" })).toContainText("compose decision room");
+  await expect(page.getByRole("list", { name: "Recent agent activity" })).toContainText("compose decision room");
   const liveActivity = await page.evaluate(() => window.__situationRoom.getState().agentActivity);
   expect(liveActivity.lastDiff).toMatchObject({ decisionChanged: false, viewChanged: true });
   expect(liveActivity.steps.at(-1).argumentKeys).toEqual(expect.arrayContaining([
@@ -424,7 +424,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
 
   expectWorkspaceUnchanged(await appSnapshot(page), beforeAnalysis);
 
-  await selectWorkflowPhase(page, "Model", "contract_draft");
+  await selectWorkflowPhase(page, "Set up decision", "contract_draft");
   await expect.poll(async () => toolNames(page)).toContain("propose_decision_contract");
   const modelTools = await discover(page);
   observedTools.push(...modelTools);
@@ -451,7 +451,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(afterProposal.decisionRevision).toBe(beforeProposal.decisionRevision);
   expect(afterProposal.decisionHash).toBe(beforeProposal.decisionHash);
 
-  await selectWorkflowPhase(page, "Review", "collaboration");
+  await selectWorkflowPhase(page, "Review requests", "collaboration");
   await expect.poll(async () => toolNames(page)).toContain("comment_on_entity");
   await expect(page.locator(".review-artifact-strip")).toContainText("Contract activation and authority changes require a human-reviewed canonical contract replacement.");
   const proposalRow = page.locator(".review-artifact-strip li").filter({ hasText: "decision proposeContract" }).first();
@@ -462,7 +462,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(duringHumanReview.activeCaseJson).toBe(beforeProposal.activeCaseJson);
   expect(duringHumanReview.decisionHash).toBe(beforeProposal.decisionHash);
   await page.getByRole("button", { name: "Return to review" }).click();
-  await expect(page.getByRole("heading", { name: "Review exchange" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Human review" })).toBeVisible();
   await proposalRow.getByRole("button", { name: "Reject proposal" }).click();
   await expect(proposalRow).toContainText("rejected by human");
   expect((await appSnapshot(page)).activeCaseJson).toBe(beforeProposal.activeCaseJson);
@@ -471,7 +471,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(collaborationTools.map((tool) => tool.name)).toContain("create_branch");
   assertNoProhibitedNames(collaborationTools);
 
-  await selectWorkflowPhase(page, "Outputs", "output");
+  await selectWorkflowPhase(page, "Export", "output");
   await expect.poll(async () => toolNames(page)).toContain("export_case");
   const outputTools = await discover(page);
   observedTools.push(...outputTools);
@@ -529,7 +529,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   expect(deniedPurchase.parsed.error.code).toBe("POLICY_DENIED");
   expect((await appSnapshot(page)).outputArtifactCount).toBe(beforeDeniedAction);
 
-  await clickRoomControl(page, "Freeze");
+  await clickRoomControl(page, "Pause changes");
   await expect.poll(async () => page.evaluate(() => window.__situationRoom.getState().frozen)).toBe(true);
   await expect.poll(async () => page.evaluate(() => window.__situationRoom.gateway.context?.phase)).toBe("frozen");
   await expect.poll(async () => toolNames(page)).not.toContain("export_case");
@@ -553,7 +553,7 @@ test("request_human_resolution stages a cited Review artifact without opening hu
   const alternative = before.presentation.entities.find((entity) => entity.kind === "alternative");
   expect(alternative).toBeTruthy();
 
-  await selectWorkflowPhase(page, "Review", "collaboration");
+  await selectWorkflowPhase(page, "Review requests", "collaboration");
   await expect.poll(async () => toolNames(page)).toContain("request_human_resolution");
 
   const invented = await executeTool(page, "request_human_resolution", {
@@ -593,7 +593,7 @@ test("request_human_resolution stages a cited Review artifact without opening hu
   await expect(visibleArtifact).toBeVisible();
   await expect(visibleArtifact).toContainText("human resolution request");
   await expect(visibleArtifact).toContainText("agent · awaiting human");
-  await expect(page.getByRole("dialog", { name: "Commit the human decision" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Approve this decision" })).toHaveCount(0);
 
   const after = await appSnapshot(page);
   expect(after.activeCaseJson).toBe(before.activeCaseJson);
@@ -635,7 +635,7 @@ test("a frozen case with a pending human checkpoint normalizes analysis deep lin
   const alternative = before.presentation.entities.find((entity) => entity.kind === "alternative");
   expect(alternative).toBeTruthy();
 
-  await selectWorkflowPhase(page, "Review", "collaboration");
+  await selectWorkflowPhase(page, "Review requests", "collaboration");
   const requested = await executeTool(page, "request_human_resolution", {
     caseId: before.activeCaseId,
     entityRefs: [{ kind: "alternative", id: alternative.id }],
@@ -644,7 +644,7 @@ test("a frozen case with a pending human checkpoint normalizes analysis deep lin
     idempotencyKey: "browser-frozen-pending-route-normalization",
   });
   expect(requested.parsed.ok).toBe(true);
-  await clickRoomControl(page, "Freeze");
+  await clickRoomControl(page, "Pause changes");
   await expect.poll(async () => page.evaluate(() => window.__situationRoom.getState().frozen)).toBe(true);
 
   await page.goto(`/cases/${before.activeCaseId}/analyze/compare`, { waitUntil: "domcontentloaded" });
@@ -664,7 +664,7 @@ test("shared freeze authority propagates across tabs and rejects a stale direct 
     await waitForIntegratedRoom(peer);
     const before = await appSnapshot(peer);
 
-    await clickRoomControl(page, "Freeze");
+    await clickRoomControl(page, "Pause changes");
     await expect.poll(async () => peer.evaluate(() => ({
       frozen: window.__situationRoom.getState().frozen,
       phase: window.__situationRoom.gateway.context?.phase,
@@ -695,7 +695,7 @@ test("shared freeze authority propagates across tabs and rejects a stale direct 
     expect(directMutation).toMatchObject({ ok: false, code: "CASE_FROZEN" });
     expect((await appSnapshot(peer)).activeCaseJson).toBe(before.activeCaseJson);
 
-    await clickRoomControl(page, "Frozen");
+    await clickRoomControl(page, "Resume changes");
     await expect.poll(async () => peer.evaluate(() => window.__situationRoom.getState().frozen)).toBe(false);
     await expect.poll(async () => toolNames(peer)).toContain("compose_decision_room");
   } finally {
@@ -737,7 +737,7 @@ test("session-only fallback stays usable, retires governed agent mutations, and 
 test("prepared decision packets retain only the latest twenty durable blobs", async ({ page }) => {
   await page.goto("/", { waitUntil: "domcontentloaded" });
   await waitForIntegratedRoom(page);
-  await selectWorkflowPhase(page, "Output", "output");
+  await selectWorkflowPhase(page, "Export", "output");
   const before = await appSnapshot(page);
 
   for (let index = 0; index < 22; index += 1) {
@@ -777,7 +777,7 @@ test("prepared decision packets retain only the latest twenty durable blobs", as
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForIntegratedRoom(page);
   expect(await page.evaluate(() => window.__situationRoom.getState().outputArtifacts.length)).toBe(20);
-  await selectWorkflowPhase(page, "Output", "output");
+  await selectWorkflowPhase(page, "Export", "output");
   await expect(page.getByRole("navigation", { name: "Prepared output pages" })).toContainText("Page 1 of 5 · 20 artifacts");
 });
 

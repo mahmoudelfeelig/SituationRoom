@@ -35,7 +35,7 @@ async function openRoom(page, path = "/") {
 }
 
 async function openRoomControls(page) {
-  const toggle = page.getByRole("button", { name: "Room controls", exact: true });
+  const toggle = page.getByRole("button", { name: "More", exact: true });
   if (await toggle.getAttribute("aria-expanded") !== "true") await toggle.click();
   await expect(page.locator("#os-utility-menu")).toHaveClass(/is-open/);
 }
@@ -60,7 +60,7 @@ async function openSourceArchive(page) {
     await spineControl.click();
     return spineControl;
   }
-  return clickRoomControl(page, /Source archive/);
+  return clickRoomControl(page, /^Sources$/);
 }
 
 async function followLens(page, name) {
@@ -151,13 +151,13 @@ test("the Living Caseboard opens with its governance shell and no startup errors
   await openRoom(page);
   await expect(page.getByRole("heading", { name: "SituationRoom", level: 1 })).toBeVisible();
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/analyze\/investigate$/);
-  await expect(page.getByRole("complementary", { name: "Case file navigation" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Decision views" })).toBeVisible();
-  await expect(page.getByRole("navigation", { name: "Case workflow" })).toBeVisible();
-  await expect(page.getByRole("complementary", { name: "Decision Firewall" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Authority rail" })).toBeHidden();
+  await expect(page.getByRole("complementary", { name: "Decision navigation" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Analysis views" })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Decision workflow" })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Decision safeguards" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who decides" })).toBeHidden();
   await expandFirewall(page);
-  await expect(page.getByRole("heading", { name: "Authority rail" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Who decides" })).toBeVisible();
   await expect(page.getByRole("region", { name: "View history" })).toBeVisible();
   await expect(page.locator(".os-red-thread")).toHaveCount(1);
   await expect(page.locator(".os-case-tab")).toHaveCount(4);
@@ -175,7 +175,7 @@ test("a health-plan comparison deep link restores the case, lens, and analysis s
     lens: "compare",
     layout: "matrix",
   });
-  await expect(page.locator('.os-lens-tabs a[aria-current="page"]')).toContainText("Aligned comparison");
+  await expect(page.locator('.os-lens-tabs a[aria-current="page"]')).toContainText("Compare options");
   await expect(page.locator('[data-layout-pattern="matrix"]')).toBeVisible();
   await expect(page.locator(".compiled-room-view")).toHaveCount(1);
   await expect(page.locator(".os-workflow-desk")).toHaveCount(0);
@@ -184,7 +184,7 @@ test("a health-plan comparison deep link restores the case, lens, and analysis s
 test("the decision archive is an isolated route instead of another stacked room rail", async ({ page }) => {
   await openRoom(page, "/cases");
   await expect(page).toHaveURL(/\/cases$/);
-  await expect(page.getByRole("heading", { name: "Open a case file" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Choose a decision" })).toBeVisible();
   await expect(page.locator(".os-archive-ledger > li")).toHaveCount(4);
   await expect(page.locator(".os-room-shell")).toHaveCount(0);
   await expect(page.locator(".os-firewall")).toHaveCount(0);
@@ -198,24 +198,24 @@ test("case routes mount one work surface and browser history restores its locati
   await expect(page.locator(".os-question-rail")).toHaveCount(1);
   await expect(page.locator(".os-workflow-desk")).toHaveCount(0);
 
-  await followWorkflow(page, /^Model/);
+  await followWorkflow(page, /^Set up decision/);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/model$/);
   await expect.poll(async () => (await roomState(page)).capabilityPhase).toBe("contract_draft");
-  await expect(page.getByRole("heading", { name: "Decision contract" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
   await expect(page.locator(".contract-desk")).toHaveCount(1);
   await expect(page.locator(".compiled-room-view, .os-question-rail, .os-history-rail, .collaboration-desk, .output-desk")).toHaveCount(0);
 
   await followWorkflow(page, /^Review/);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/review$/);
   await expect.poll(async () => (await roomState(page)).capabilityPhase).toBe("collaboration");
-  await expect(page.getByRole("heading", { name: "Review exchange" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Human review" })).toBeVisible();
   await expect(page.locator(".collaboration-desk")).toHaveCount(1);
   await expect(page.locator(".compiled-room-view, .os-question-rail, .os-history-rail, .contract-desk, .output-desk")).toHaveCount(0);
 
   await page.goBack();
   await waitForRoom(page);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/model$/);
-  await expect(page.getByRole("heading", { name: "Decision contract" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
 
   await page.goBack();
   await waitForRoom(page);
@@ -225,17 +225,17 @@ test("case routes mount one work surface and browser history restores its locati
   await page.goForward();
   await waitForRoom(page);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/model$/);
-  await followWorkflow(page, /^Outputs/);
+  await followWorkflow(page, /^Export/);
   await expect(page).toHaveURL(/\/cases\/procurement-demo\/outputs$/);
   await expect.poll(async () => (await roomState(page)).capabilityPhase).toBe("output");
-  await expect(page.getByRole("heading", { name: "Packet press" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Export decision" })).toBeVisible();
   await expect(page.locator(".output-desk")).toHaveCount(1);
   await expect(page.locator(".compiled-room-view, .os-question-rail, .os-history-rail, .contract-desk, .collaboration-desk")).toHaveCount(0);
 });
 
 test("a cross-case route normalization preserves the prior case in browser history", async ({ page }) => {
   await openRoom(page, "/cases/generic-demo/analyze/investigate");
-  await clickRoomControl(page, "Freeze");
+  await clickRoomControl(page, "Pause changes");
   await expect.poll(async () => (await roomState(page)).frozen).toBe(true);
 
   await switchCase(page, CASE_NAMES.procurement, "procurement");
@@ -286,7 +286,7 @@ test("a corrupted durable case exposes retry and a confirmed local recovery rese
   await expect(boot.getByRole("button", { name: "Retry startup" })).toBeEnabled();
 
   await boot.getByRole("button", { name: "Reset local workspace" }).click();
-  await expect(boot).toContainText("This erases local cases, imports, receipts, and prepared outputs");
+  await expect(boot).toContainText("This erases local decisions, imports, activity, and prepared files");
   await Promise.all([
     page.waitForEvent("domcontentloaded"),
     boot.getByRole("button", { name: "Confirm erase and reseed" }).click(),
@@ -300,10 +300,10 @@ test("all four room grammars recompose without changing the canonical decision",
   await openRoom(page);
   const before = await roomState(page);
   const lenses = [
-    [/Causal trace/i, "trace", "investigate"],
-    [/Aligned comparison/i, "matrix", "compare"],
-    [/Scenario fork/i, "fork", "simulate"],
-    [/Decision council/i, "council", "brief"],
+    [/Review evidence/i, "trace", "investigate"],
+    [/Compare options/i, "matrix", "compare"],
+    [/Try scenarios/i, "fork", "simulate"],
+    [/Decision summary/i, "council", "brief"],
   ];
   for (const [name, layout, lens] of lenses) {
     await followLens(page, name);
@@ -320,7 +320,7 @@ test("all four room grammars recompose without changing the canonical decision",
       await expect(branch.getByText("≤ 12 weeks", { exact: true })).toBeVisible();
       await expect(branch).toContainText("Top-ranked but blocked");
       await expect(branch).toContainText("Northstar Relay");
-      await expect(branch).toContainText(`Revision ${before.decisionRevision} unchanged`);
+      await expect(branch).toContainText(`Version ${before.decisionRevision} unchanged`);
     }
     const current = await roomState(page);
     expect(current.lens).toBe(lens);
@@ -363,11 +363,11 @@ test("composition cancellation and history restoration preserve the prior canoni
   expect(canceled.layout).toBe(before.layout);
   expect(canceled.decisionJson).toBe(before.decisionJson);
 
-  await followLens(page, /Aligned comparison/);
+  await followLens(page, /Compare options/);
   await expect(page.locator('[data-layout-pattern="matrix"]')).toBeVisible();
   await waitForRoom(page);
   const comparison = await roomState(page);
-  await followLens(page, /Decision council/);
+  await followLens(page, /Decision summary/);
   await expect(page.locator('[data-layout-pattern="council"]')).toBeVisible();
   await waitForRoom(page);
   const council = await roomState(page);
@@ -386,7 +386,7 @@ test("composition cancellation and history restoration preserve the prior canoni
 test("the source archive preserves exact citations, focus, pins, and modal focus", async ({ page }) => {
   await openRoom(page);
   const trigger = await openSourceArchive(page);
-  const dialog = page.getByRole("dialog", { name: "Source archive" });
+  const dialog = page.getByRole("dialog", { name: "Sources" });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator(".os-source-ledger li").first()).toContainText(/page|paragraph|cell|source/i);
   expect(await dialog.evaluate((node) => node.contains(document.activeElement))).toBe(true);
@@ -404,8 +404,8 @@ test("the source archive preserves exact citations, focus, pins, and modal focus
 
 test("the accessible outline uses the same compiled plan and traps focus", async ({ page }) => {
   await openRoom(page);
-  await clickRoomControl(page, /Accessible outline/);
-  const dialog = page.getByRole("dialog", { name: "Accessible room outline" });
+  await clickRoomControl(page, /Accessible summary/);
+  const dialog = page.getByRole("dialog", { name: "Accessible summary" });
   await expect(dialog).toBeVisible();
   await expect(dialog.locator("article.os-outline")).toContainText((await page.locator(".compiled-view-heading h2").textContent()).trim());
   for (let index = 0; index < 12; index += 1) await page.keyboard.press("Tab");
@@ -417,7 +417,7 @@ test("the accessible outline uses the same compiled plan and traps focus", async
 test("a remotely surfaced intake checkpoint replaces utility overlays and contains focus", async ({ page }) => {
   await openRoom(page);
   await openSourceArchive(page);
-  await expect(page.getByRole("dialog", { name: "Source archive" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Sources" })).toBeVisible();
 
   await page.evaluate(async () => {
     const room = window.__situationRoom.getState();
@@ -433,7 +433,7 @@ test("a remotely surfaced intake checkpoint replaces utility overlays and contai
   const intake = page.getByRole("dialog", { name: "Construct a new decision room" });
   await expect(intake).toBeVisible({ timeout: 20_000 });
   await expect(page.getByRole("dialog")).toHaveCount(1);
-  await expect(page.getByRole("dialog", { name: "Source archive" })).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Sources" })).toHaveCount(0);
   for (let index = 0; index < 10; index += 1) await page.keyboard.press("Tab");
   expect(await intake.evaluate((node) => node.contains(document.activeElement))).toBe(true);
 
@@ -443,7 +443,7 @@ test("a remotely surfaced intake checkpoint replaces utility overlays and contai
   else if (await discardRecovery.count()) await discardRecovery.click();
   await intake.getByRole("button", { name: "Cancel" }).click();
   await expect(intake).toBeHidden();
-  await expect(page.getByRole("dialog", { name: "Source archive" })).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Sources" })).toBeVisible();
   await page.keyboard.press("Escape");
 });
 
@@ -482,18 +482,15 @@ test("decision playback separates canonical history from view-only recomposition
   expect((await roomState(page)).decisionRevision).toBe(before.decisionRevision);
   expect((await roomState(page)).viewRevision).toBe(before.viewRevision + 1);
 
-  await clickRoomControl(page, "Decision ledger");
-  const ledger = page.getByRole("dialog", { name: "Decision playback and tool ledger" });
+  await clickRoomControl(page, "Activity history");
+  const ledger = page.getByRole("dialog", { name: "Activity history" });
   await expect(ledger.getByRole("heading", { name: "Trace what changed and why" })).toBeVisible();
-  await expect(ledger.getByRole("heading", { name: "Codex Site-tools acceptance console" })).toBeVisible();
   await expect(ledger.getByRole("list", { name: "Ordered decision history" })).toContainText("presentation committed");
-  await expect(ledger.getByText("View only", { exact: true })).toBeVisible();
+  await expect(ledger.getByText("Page only", { exact: true })).toBeVisible();
   expect(await ledger.locator(".os-playback-heading p").evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
   expect(await ledger.locator(".os-playback-track small").first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
-  expect(await ledger.locator(".os-model-eval > header p").evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(14);
-  expect(await ledger.locator(".os-model-eval__setup dt").first().evaluate((element) => parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(12);
   await ledger.getByRole("button", { name: /Compare/ }).click();
-  await expect(ledger.getByRole("heading", { name: "Compare two receipts" })).toBeVisible();
+  await expect(ledger.getByRole("heading", { name: "Compare two events" })).toBeVisible();
 });
 
 test("a large standard CSV exposes complete paginated review and commits only a draft", async ({ page }) => {
@@ -536,7 +533,7 @@ test("a large standard CSV exposes complete paginated review and commits only a 
   expect(committed.capabilityPhase).toBe("contract_draft");
   expect(committed.caseId).not.toBe(original.caseId);
   await expect(page).toHaveURL(new RegExp(`/cases/${encodeURIComponent(committed.caseId)}/model$`));
-  await expect(page.getByRole("heading", { name: "Decision contract" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
   await expect(page.locator(".os-missing-route")).toHaveCount(0);
 });
 
@@ -571,11 +568,11 @@ test("failed pre-commit deletion stays visible and can be resumed without trappi
   await dialog.getByRole("button", { name: "Return to room" }).click();
   await expect(dialog).toBeHidden();
   const docket = page.locator(".os-recovery-docket");
-  await expect(docket).toContainText("Import recovery requires human attention");
+  await expect(docket).toContainText("This import needs your attention");
   await expect(page.locator(".decision-os")).toBeVisible();
 
   await restoreIndexedDbSourceDeletion(page);
-  await docket.getByRole("button", { name: "Open recovery docket" }).click();
+  await docket.getByRole("button", { name: "Review import" }).click();
   dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
   await dialog.getByRole("button", { name: "Discard retained source data" }).click();
   await dialog.getByRole("button", { name: "Cancel" }).click();
@@ -596,11 +593,11 @@ test("post-commit cleanup failure leaves a nonblocking durable docket and never 
   expect((await roomState(page)).decisionRevision).toBe(committed.decisionRevision);
   await dialog.getByRole("button", { name: "Return to room" }).click();
   const docket = page.locator(".os-recovery-docket");
-  await expect(docket).toContainText("Retained-source cleanup is pending");
+  await expect(docket).toContainText("A source file still needs to be removed");
   expect((await roomState(page)).decisionRevision).toBe(committed.decisionRevision);
 
   await restoreIndexedDbSourceDeletion(page);
-  await docket.getByRole("button", { name: "Open recovery docket" }).click();
+  await docket.getByRole("button", { name: "Review import" }).click();
   dialog = page.getByRole("dialog", { name: "Construct a new decision room" });
   await dialog.getByRole("button", { name: "Retry retained-source cleanup" }).click();
   await expect(dialog).toBeHidden({ timeout: 20_000 });
@@ -611,8 +608,8 @@ test("post-commit cleanup failure leaves a nonblocking durable docket and never 
 test("the typed contract must be reactivated after a human draft edit", async ({ page }) => {
   await openRoom(page);
   await switchCase(page, CASE_NAMES.generic, "generic");
-  await followWorkflow(page, /^Model/);
-  await expect(page.getByRole("heading", { name: "Decision contract" })).toBeVisible();
+  await followWorkflow(page, /^Set up decision/);
+  await expect(page.getByRole("heading", { name: "Decision setup" })).toBeVisible();
   const question = page.getByLabel("Decision question");
   await question.fill("Which portable workstation is feasible after independently verified repairability evidence?");
   const before = await roomState(page);
@@ -620,8 +617,8 @@ test("the typed contract must be reactivated after a human draft edit", async ({
   await expect.poll(async () => (await roomState(page)).contractStatus).toBe("draft");
   const draft = await roomState(page);
   expect(draft.decisionRevision).toBe(before.decisionRevision + 1);
-  await expect(page.getByRole("button", { name: "Activate contract before approval" })).toBeDisabled();
-  await page.getByRole("button", { name: "Activate contract", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Finish setup before review" })).toBeDisabled();
+  await page.getByRole("button", { name: "Start analysis", exact: true }).click();
   await expect.poll(async () => (await roomState(page)).contractStatus).toBe("active");
   expect((await roomState(page)).decisionRevision).toBe(draft.decisionRevision + 1);
 });
@@ -629,7 +626,7 @@ test("the typed contract must be reactivated after a human draft edit", async ({
 test("typed model validation is atomic and a valid edit persists as one revision", async ({ page }) => {
   await openRoom(page);
   await switchCase(page, CASE_NAMES.generic, "generic");
-  await followWorkflow(page, /^Model/);
+  await followWorkflow(page, /^Set up decision/);
   const before = await roomState(page);
   const claims = page.locator("details.model-editor-section").filter({ hasText: "Claims and source anchors" });
   await claims.locator(":scope > summary").click();
@@ -651,18 +648,18 @@ test("typed model validation is atomic and a valid edit persists as one revision
 
 test("human approval requires a fresh confirmation every time the dialog opens", async ({ page }) => {
   await openRoom(page);
-  const trigger = page.getByRole("button", { name: "Preview human approval" });
+  const trigger = page.getByRole("button", { name: "Review decision" });
   await trigger.click();
-  let dialog = page.getByRole("dialog", { name: "Commit the human decision" });
-  const commit = dialog.getByRole("button", { name: "Commit approval" });
+  let dialog = page.getByRole("dialog", { name: "Approve this decision" });
+  const commit = dialog.getByRole("button", { name: "Approve decision" });
   await expect(commit).toBeDisabled();
-  await dialog.getByLabel(/I reviewed the cited evidence/).check();
+  await dialog.getByLabel(/I reviewed the evidence/).check();
   await expect(commit).toBeEnabled();
   await dialog.getByRole("button", { name: "Cancel" }).click();
   await trigger.click();
-  dialog = page.getByRole("dialog", { name: "Commit the human decision" });
-  await expect(dialog.getByRole("button", { name: "Commit approval" })).toBeDisabled();
-  await expect(dialog.getByLabel(/I reviewed the cited evidence/)).not.toBeChecked();
+  dialog = page.getByRole("dialog", { name: "Approve this decision" });
+  await expect(dialog.getByRole("button", { name: "Approve decision" })).toBeDisabled();
+  await expect(dialog.getByLabel(/I reviewed the evidence/)).not.toBeChecked();
   await dialog.getByRole("button", { name: "Cancel" }).click();
 });
 
@@ -670,10 +667,10 @@ test("candidate review exposes requirement evidence without a machine outcome", 
   await openRoom(page);
   await switchCase(page, CASE_NAMES.candidate, "candidate-review");
   const room = await roomState(page);
-  const firewall = page.getByRole("complementary", { name: "Decision Firewall" });
-  await expect(firewall).toContainText("Machine ranking disabled");
+  const firewall = page.getByRole("complementary", { name: "Decision safeguards" });
+  await expect(firewall).toContainText("Automatic ranking is off");
   await expandFirewall(page);
-  await expect(firewall).toContainText("Job requirement evidence");
+  await expect(firewall).toContainText("Required job evidence");
   await expect(firewall.locator(".os-gate-ledger")).toContainText("1 not demonstrated");
   await expect(firewall.locator(".os-firewall__metrics")).not.toContainText("blockers");
   await expect(page.getByRole("button", { name: "Human employment decision only" })).toBeDisabled();
@@ -693,7 +690,7 @@ test("the complete review backlog remains paginated and durable without local-st
     await note.fill(`Durable review entry ${index}`);
     await desk.getByRole("button", { name: "Stage for review" }).click();
   }
-  const pager = desk.getByRole("navigation", { name: "Review exchange pages" });
+  const pager = desk.getByRole("navigation", { name: "Human review pages" });
   await expect(pager).toContainText("Page 1 of 2 · 8 entries");
   await pager.getByRole("button", { name: "Next" }).click();
   await expect(desk).toContainText("Durable review entry 0");
@@ -721,7 +718,7 @@ test("the complete review backlog remains paginated and durable without local-st
   await waitForRoom(page);
   await followWorkflow(page, /^Review/);
   const restoredDesk = page.locator(".collaboration-desk");
-  const restoredPager = restoredDesk.getByRole("navigation", { name: "Review exchange pages" });
+  const restoredPager = restoredDesk.getByRole("navigation", { name: "Human review pages" });
   await expect(restoredPager).toContainText("Page 1 of 2 · 8 entries");
   await restoredPager.getByRole("button", { name: "Next" }).click();
   await expect(restoredDesk).toContainText("Durable review entry 0");
@@ -745,8 +742,8 @@ test("health-plan and generic rooms remain general, domain-specific, and reload 
 test("prepared packets are revision-bound and only download after a human click", async ({ page }) => {
   await openRoom(page);
   const before = await roomState(page);
-  await followWorkflow(page, /^Outputs/);
-  await expect(page.getByRole("heading", { name: "Packet press" })).toBeVisible();
+  await followWorkflow(page, /^Export/);
+  await expect(page.getByRole("heading", { name: "Export decision" })).toBeVisible();
   await page.getByRole("button", { name: /json Portable JSON/i }).click();
   const item = page.locator(".prepared-output-ledger li").first();
   await expect(item).toContainText(`r${before.decisionRevision}`);
@@ -762,18 +759,18 @@ test("prepared packets are revision-bound and only download after a human click"
 test("manual freeze persists across reload and disables every human mutation surface", async ({ page }) => {
   await openRoom(page);
   const before = await roomState(page);
-  await clickRoomControl(page, "Freeze");
+  await clickRoomControl(page, "Pause changes");
   await expect.poll(async () => (await roomState(page)).frozen).toBe(true);
   await expect(page.locator("#decision-question")).toBeDisabled();
   await expect(page.locator(".os-workflow-tabs a[aria-disabled='true']")).toHaveCount(3);
   await expect(page.locator(".os-lens-tabs a")).toHaveCount(4);
-  await followLens(page, /Aligned comparison/);
+  await followLens(page, /Compare options/);
   await expect(page).toHaveURL(/\/analyze\/compare$/);
   expect((await roomState(page)).decisionJson).toBe(before.decisionJson);
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForRoom(page);
   expect((await roomState(page)).frozen).toBe(true);
-  await clickRoomControl(page, "Frozen");
+  await clickRoomControl(page, "Resume changes");
   await expect.poll(async () => (await roomState(page)).frozen).toBe(false);
 });
 
@@ -786,14 +783,14 @@ test("the full manual workflow remains operational when WebMCP is absent", async
     }
   });
   await openRoom(page);
-  await expect(page.locator(".os-webmcp-state")).toContainText("Manual parity active");
+  await expect(page.locator(".os-webmcp-state")).toContainText("Site tools unavailable");
   expect(await page.evaluate(() => window.__situationRoom.getState().webMcp.available)).toBe(false);
-  await followLens(page, /Aligned comparison/);
+  await followLens(page, /Compare options/);
   await expect(page.locator('[data-layout-pattern="matrix"]')).toBeVisible();
   await followWorkflow(page, /^Review/);
-  await expect(page.getByRole("heading", { name: "Review exchange" })).toBeVisible();
-  await followWorkflow(page, /^Outputs/);
-  await expect(page.getByRole("heading", { name: "Packet press" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Human review" })).toBeVisible();
+  await followWorkflow(page, /^Export/);
+  await expect(page.getByRole("heading", { name: "Export decision" })).toBeVisible();
 });
 
 test("tablet composition keeps compact governance inside the single routed stage", async ({ page }) => {
@@ -813,7 +810,7 @@ test("tablet composition keeps compact governance inside the single routed stage
   expect(geometry.overflow).toBe(0);
   expect(geometry.firewallInsideStage).toBe(true);
   expect(geometry.firewallWithinStageWidth).toBe(true);
-  await expect(page.getByRole("complementary", { name: "Decision Firewall" })).toBeVisible();
+  await expect(page.getByRole("complementary", { name: "Decision safeguards" })).toBeVisible();
 });
 
 test("destructive reset requires confirmation and reseeds the four clean rooms", async ({ page }) => {
@@ -878,7 +875,7 @@ test("mobile layout has no page overflow, a working skip link, named controls, a
 test("the mobile room map removes closed navigation from Tab order and restores opener focus", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await openRoom(page);
-  const trigger = page.getByRole("button", { name: "Room map", exact: true });
+  const trigger = page.getByRole("button", { name: "Navigate", exact: true });
   await expect(trigger).toHaveAttribute("aria-expanded", "false");
   await trigger.focus();
 

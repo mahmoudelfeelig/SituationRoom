@@ -21,7 +21,6 @@ import {
   toggleSourceDrawer,
 } from "../../workspace/workspaceStore.js";
 import { DecisionPlayback } from "./DecisionPlayback.jsx";
-import { WebMcpEvaluationConsole } from "./WebMcpEvaluationConsole.jsx";
 import { ModalSurface } from "./ModalSurface.jsx";
 
 function humanize(value) {
@@ -54,18 +53,18 @@ export function SourceArchive({ room }) {
   return (
     <ModalSurface
       open={room.sourceDrawerOpen}
-      title="Source archive"
-      eyebrow="Untrusted material · exact anchors retained"
+      title="Sources"
+      eyebrow="Original material with exact locations"
       onClose={() => toggleSourceDrawer(false)}
       size="large"
     >
       <div className="os-source-toolbar">
         <label>
           <IconFileSearch size={18} />
-          <span className="sr-only">Search source archive</span>
+          <span className="sr-only">Search sources</span>
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search passages, cells, pages, or files" />
         </label>
-        <span>{filtered.length} of {sources.length} anchored passages</span>
+        <span>{filtered.length} of {sources.length} source passages</span>
       </div>
       <ol className="os-source-ledger">
         {filtered.map((source, index) => {
@@ -107,7 +106,7 @@ export function AccessibleOutline({ room }) {
     return new Map(items.map((item) => [`${item.kind ?? (item.text ? "source" : "result")}:${item.id}`, item]));
   }, [room.snapshot]);
   return (
-    <ModalSurface open={room.outlineOpen} title="Accessible room outline" eyebrow="Same plan · linear reading order" onClose={() => toggleOutline(false)} size="large">
+    <ModalSurface open={room.outlineOpen} title="Accessible summary" eyebrow="The same information in a simple reading order" onClose={() => toggleOutline(false)} size="large">
       {plan ? (
         <article className="os-outline" aria-label={`${plan.question} outline`}>
           <header><span>{humanize(plan.lens)}</span><h3>{plan.question}</h3><p>{plan.framing}</p></header>
@@ -125,7 +124,7 @@ export function AccessibleOutline({ room }) {
             </section>
           ))}
         </article>
-      ) : <p className="os-empty-state">No compiled room is active.</p>}
+      ) : <p className="os-empty-state">No decision view is open.</p>}
     </ModalSurface>
   );
 }
@@ -133,16 +132,15 @@ export function AccessibleOutline({ room }) {
 export function AuditLedger({ room }) {
   const receipts = room.receipts;
   return (
-    <ModalSurface open={room.auditOpen} title="Decision playback and tool ledger" eyebrow="Append-only receipts · canonical and presentation history separated" onClose={() => toggleAudit(false)} size="large">
+    <ModalSurface open={room.auditOpen} title="Activity history" eyebrow="See what changed, when it changed, and who changed it" onClose={() => toggleAudit(false)} size="large">
       <div className="os-audit-summary">
-        <div><IconFingerprint size={19} /><span>Decision digest</span><code>{room.activeCase ? getDecisionHash(room.activeCase) : "Unavailable"}</code></div>
-        <div><IconHistory size={19} /><span>Decision / view</span><strong>{room.activeCase?.revision ?? 0} / {room.viewRevision}</strong></div>
+        <div><IconFingerprint size={19} /><span>Decision fingerprint</span><code>{room.activeCase ? getDecisionHash(room.activeCase) : "Unavailable"}</code></div>
+        <div><IconHistory size={19} /><span>Decision version / saved view</span><strong>{room.activeCase?.revision ?? 0} / {room.viewRevision}</strong></div>
       </div>
-      <WebMcpEvaluationConsole room={room} />
       <DecisionPlayback receipts={receipts} activeCaseId={room.activeCase?.id} />
       {receipts.length ? (
         <details className="os-raw-receipts">
-          <summary>Inspect raw append-only receipts</summary>
+          <summary>Show technical activity records</summary>
           <ol className="os-receipt-ledger">
             {receipts.map((receipt) => (
               <li key={receipt.id}>
@@ -195,15 +193,15 @@ export function HumanApprovalModal({ room }) {
   return (
     <ModalSurface
       open={room.approvalOpen}
-      title="Commit the human decision"
-      eyebrow="Not exposed through WebMCP · explicit UI confirmation"
+      title="Approve this decision"
+      eyebrow="Only a person can complete this step"
       onClose={close}
       closeDisabled={committing}
       footer={(
         <>
           <button type="button" className="os-button-secondary" disabled={committing} onClick={close}>Cancel</button>
           <button type="button" className="os-button-primary" disabled={!confirmed || committing || !target?.eligible} onClick={commit}>
-            <IconShieldCheck size={18} /> {committing ? "Committing exact digest" : "Commit approval"}
+            <IconShieldCheck size={18} /> {committing ? "Approving" : "Approve decision"}
           </button>
         </>
       )}
@@ -212,15 +210,15 @@ export function HumanApprovalModal({ room }) {
         <div className="os-approval-sheet">
           <span className="os-verdict-label">Selected alternative</span>
           <h3>{target.alternative.label}</h3>
-          <p>This action approves the current evidence-backed recommendation and freezes the exact decision revision. It does not perform any external purchase, enrollment, hiring, or submission.</p>
+          <p>This approves the current recommendation and prevents further changes. It does not purchase, enroll, hire, submit, or take any action outside SituationRoom.</p>
           <dl>
-            <div><dt>Decision revision</dt><dd>{room.activeCase.revision}</dd></div>
+            <div><dt>Decision version</dt><dd>{room.activeCase.revision}</dd></div>
             <div><dt>Eligibility</dt><dd>{target.eligible ? "Every mandatory gate passes" : "Blocked"}</dd></div>
-            <div><dt>Digest</dt><dd><code>{digest}</code></dd></div>
+            <div><dt>Fingerprint</dt><dd><code>{digest}</code></dd></div>
           </dl>
           <label className="os-confirmation-check">
             <input type="checkbox" checked={confirmed} onChange={(event) => setConfirmed(event.target.checked)} />
-            <span>I reviewed the cited evidence, unresolved items, and protected constraints. This is my decision.</span>
+            <span>I reviewed the evidence, unanswered questions, and required checks. This is my decision.</span>
           </label>
           {error ? <p className="os-error-message" role="alert">{error}</p> : null}
         </div>

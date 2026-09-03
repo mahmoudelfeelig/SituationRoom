@@ -307,7 +307,7 @@ export function DataQualityDocketInstrument({ snapshot, instrument }) {
   const sourceProblems = (snapshot.sources ?? []).filter((source) => !["ready", "parsed"].includes(source.status));
   const issueCount = lowConfidence.length + sourceProblems.length;
   return (
-    <InstrumentFrame instrument={instrument} kicker="Intake quality" title="Data quality docket" status={issueCount ? "warning" : "pass"}>
+    <InstrumentFrame instrument={instrument} kicker="Import quality" title="Data quality issues" status={issueCount ? "warning" : "pass"}>
       <dl className="quality-ledger">
         <div><dt>Canonical entities</dt><dd>{snapshot.entities?.length ?? 0}</dd></div>
         <div><dt>Imported sources</dt><dd>{snapshot.sources?.length ?? 0}</dd></div>

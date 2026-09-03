@@ -97,19 +97,21 @@ export function CompiledRoomView({ snapshot, plan, onAction, className = "" }) {
       ) : null}
       <PlanWarnings warnings={plan.warnings} />
       <Layout plan={plan} headingId={headingId} renderInstrument={renderInstrument} />
-      <footer className="compiled-view-receipt" aria-label="Composition receipt">
-        <span><IconCircleCheck size={17} aria-hidden="true" /> Decision hash {plan.decisionHash} unchanged</span>
-        <span>Decision revision {plan.baseDecisionRevision}</span>
-        <span>View {plan.baseViewRevision} to {plan.nextViewRevision}</span>
-        <span>{plan.preservedPins.length} human pins preserved</span>
-        <span><IconFileDescription size={17} aria-hidden="true" /> {plan.omitted.entityCount} canonical items remain in full context</span>
-      </footer>
+      <details className="compiled-view-record">
+        <summary>Technical view details</summary>
+        <footer className="compiled-view-receipt" aria-label="Technical view details">
+          <span><IconCircleCheck size={17} aria-hidden="true" /> Decision fingerprint unchanged</span>
+          <span>Decision version {plan.baseDecisionRevision}</span>
+          <span>View {plan.baseViewRevision} to {plan.nextViewRevision}</span>
+          <span>{plan.preservedPins.length} saved items kept</span>
+          <span><IconFileDescription size={17} aria-hidden="true" /> {plan.omitted.entityCount} additional items remain available</span>
+        </footer>
+      </details>
       <div className="sr-only" aria-live="polite" aria-atomic="true">
-        {plan.lens} room composed with {plan.instruments.length} instruments. Decision facts are unchanged.
+        {plan.lens} view updated with {plan.instruments.length} sections. Decision facts are unchanged.
       </div>
     </section>
   );
 }
 
 export default CompiledRoomView;
-

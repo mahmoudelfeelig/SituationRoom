@@ -46,7 +46,7 @@ export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Alig
 
   if (!alternatives.length || !criteria.length) {
     return (
-      <InstrumentFrame instrument={instrument} kicker="Shared criteria" title={title}>
+      <InstrumentFrame instrument={instrument} kicker="How the options compare" title={title}>
         <EmptyInstrumentState>A comparison requires at least one alternative and one declared criterion.</EmptyInstrumentState>
       </InstrumentFrame>
     );
@@ -57,7 +57,7 @@ export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Alig
     return (
       <td key={`${alternative.id}:${criterion.id}`} className={`tone-${normalizeStatus(result?.status)}`}>
         <StatusMark status={result?.status ?? "unknown"} />
-        <span>{result ? (result.reason || "Canonical value recorded.") : "No canonical result is available."}</span>
+        <span>{result ? (result.reason || "Recorded value.") : "No result is available."}</span>
         {result?.value !== undefined ? (
           <strong>{formatCanonicalValue(result.value, result.unit, snapshot.metadata?.locale)}</strong>
         ) : null}
@@ -66,7 +66,7 @@ export function ComparisonMatrixInstrument({ snapshot, instrument, title = "Alig
   };
 
   return (
-    <InstrumentFrame instrument={instrument} kicker="Shared criteria" title={title}>
+    <InstrumentFrame instrument={instrument} kicker="How the options compare" title={title}>
       <p className="sr-only" id={descriptionId}>This comparison may scroll horizontally. Every cell includes a text status and reason.</p>
       <div className="comparison-table-scroll" tabIndex="0" role="region" aria-label={title} aria-describedby={descriptionId}>
         <table className={`compiled-comparison-table ${transposed ? "is-transposed" : ""}`}>
@@ -121,9 +121,9 @@ export function ScoreBreakdownInstrument({ snapshot, instrument }) {
   const numeric = results.filter((result) => typeof result.value === "number" && Number.isFinite(result.value));
   const maximumByUnit = maximaByUnit(numeric);
   return (
-    <InstrumentFrame instrument={instrument} kicker="Canonical evaluation" title="Score and result breakdown">
+    <InstrumentFrame instrument={instrument} kicker="Detailed results" title="Every check and result">
       {results.length ? (
-        <BoundedInstrumentRegion itemCount={results.length} label="Score and result breakdown">
+        <BoundedInstrumentRegion itemCount={results.length} label="Every check and result">
           <ul className="score-breakdown-list">
             {results.map((result) => {
               const value = typeof result.value === "number" ? Math.abs(result.value) : null;
@@ -138,7 +138,7 @@ export function ScoreBreakdownInstrument({ snapshot, instrument }) {
             })}
           </ul>
         </BoundedInstrumentRegion>
-      ) : <EmptyInstrumentState>No canonical evaluation results are available.</EmptyInstrumentState>}
+      ) : <EmptyInstrumentState>No results are available.</EmptyInstrumentState>}
     </InstrumentFrame>
   );
 }
@@ -155,7 +155,7 @@ export function MetricWaterfallInstrument({ snapshot, instrument, title = "Metri
     maximumByUnit.set(unit, Math.max(maximumByUnit.get(unit) ?? 1, Math.abs(result.value)));
   });
   return (
-    <InstrumentFrame instrument={instrument} kicker="Canonical metrics" title={title}>
+    <InstrumentFrame instrument={instrument} kicker="Measured results" title={title}>
       {sorted.length ? (
         <div className="metric-waterfall">
           <BoundedInstrumentRegion itemCount={sorted.length} label={title}>
@@ -174,11 +174,11 @@ export function MetricWaterfallInstrument({ snapshot, instrument, title = "Metri
             </ol>
           </BoundedInstrumentRegion>
           <div className="waterfall-total waterfall-total--disclosure">
-            <span>Canonical values retain their own units and subjects.</span>
+            <span>Values keep their original units so unlike measures are not mixed.</span>
             <strong>No cross-metric total</strong>
           </div>
         </div>
-      ) : <EmptyInstrumentState>No numeric canonical metrics are linked to this view.</EmptyInstrumentState>}
+      ) : <EmptyInstrumentState>No numeric results are linked to this view.</EmptyInstrumentState>}
     </InstrumentFrame>
   );
 }
@@ -204,7 +204,7 @@ export function TimelineInstrument({ snapshot, instrument, title = "Evidence tim
             ))}
           </ol>
         </BoundedInstrumentRegion>
-      ) : <EmptyInstrumentState>No dated canonical events are available.</EmptyInstrumentState>}
+      ) : <EmptyInstrumentState>No dated events are available.</EmptyInstrumentState>}
     </InstrumentFrame>
   );
 }
@@ -227,7 +227,7 @@ export function RiskFrontierInstrument({ snapshot, instrument, title = "Risk and
   const riskMax = Math.max(1, ...values.map((entry) => entry.risk));
   const benefitMax = Math.max(1, ...values.map((entry) => entry.benefit));
   return (
-    <InstrumentFrame instrument={instrument} kicker="Canonical trade-offs" title={title}>
+    <InstrumentFrame instrument={instrument} kicker="Trade-offs" title={title}>
       {values.length ? (
         <div className="risk-frontier-table" role="table" aria-label={title}>
           <div role="row" className="risk-frontier-header"><span role="columnheader">Alternative</span><span role="columnheader">Risk</span><span role="columnheader">Benefit</span></div>
@@ -248,9 +248,9 @@ export function SensitivityPlotInstrument({ snapshot, instrument }) {
   const numericResults = (snapshot.results ?? []).filter((result) => typeof result.value === "number").slice(0, getLimit(instrument));
   const maximumByUnit = maximaByUnit(numericResults);
   return (
-    <InstrumentFrame instrument={instrument} kicker="Hypothetical analysis" title="Sensitivity to canonical inputs">
+    <InstrumentFrame instrument={instrument} kicker="What-if analysis" title="Which inputs matter most">
       {numericResults.length ? (
-        <BoundedInstrumentRegion itemCount={numericResults.length} label="Sensitivity to canonical inputs">
+        <BoundedInstrumentRegion itemCount={numericResults.length} label="Which inputs matter most">
           <ol className="sensitivity-ledger">
             {numericResults.map((result) => {
               const maximum = maximumByUnit.get(result.unit ?? "unitless") ?? 1;
@@ -265,7 +265,7 @@ export function SensitivityPlotInstrument({ snapshot, instrument }) {
             })}
           </ol>
         </BoundedInstrumentRegion>
-      ) : <EmptyInstrumentState>No canonical sensitivity samples are available.</EmptyInstrumentState>}
+      ) : <EmptyInstrumentState>No sensitivity results are available.</EmptyInstrumentState>}
     </InstrumentFrame>
   );
 }
@@ -309,7 +309,7 @@ export function CausalTraceInstrument({ snapshot, instrument, onAction }) {
             </li>
           ))}
         </ol>
-      ) : <EmptyInstrumentState>No complete canonical path is available.</EmptyInstrumentState>}
+      ) : <EmptyInstrumentState>No complete evidence path is available.</EmptyInstrumentState>}
     </InstrumentFrame>
   );
 }

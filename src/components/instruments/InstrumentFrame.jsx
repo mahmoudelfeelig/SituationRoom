@@ -53,7 +53,7 @@ export function BoundedInstrumentRegion({ children, itemCount, label, threshold 
       data-bounded-item-count={itemCount}
     >
       <p className="instrument-bounded-region__notice">
-        {itemCount} canonical items in this ledger. Scroll within the ledger to review every item.
+        {itemCount} saved items in this list. Scroll within the list to review every item.
       </p>
       {children}
     </div>

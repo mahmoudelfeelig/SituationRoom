@@ -332,7 +332,7 @@ function writePresentationPreferences(caseId, patch) {
   sessionStateWriteQueues.set(caseId, write);
   void write.catch((error) => {
     setState({
-      lastAnnouncement: `The durable review and presentation ledger could not be saved. ${error instanceof Error ? error.message : String(error)}`,
+      lastAnnouncement: `The review history and saved views could not be saved. ${error instanceof Error ? error.message : String(error)}`,
     }, { type: "workspace.session-state-save-failed", caseId });
   }).finally(() => {
     if (sessionStateWriteQueues.get(caseId) === write) sessionStateWriteQueues.delete(caseId);
@@ -595,7 +595,7 @@ async function materializeRecoverableImport(jobOrId) {
     lastAnnouncement: cleanupPending
       ? "The canonical import commit succeeded, but retained source cleanup is still pending. Retry cleanup to remove the remaining local source data."
       : ["resume_commit", "reconcile_committed_receipt"].includes(action)
-      ? "An interrupted canonical commit requires idempotent reconciliation before this import can leave the docket."
+      ? "An interrupted save must be safely reconciled before this import can continue."
       : `Import ${job.id} requires a person to retry or discard its retained source data.`,
   }, { type: "import.recovery-required", jobId: job.id, action });
   return recovery;
@@ -2093,7 +2093,7 @@ export function saveCurrentView() {
       history,
       historyCursor: history.length - 1,
       receipts: [receipt, ...current.receipts].slice(0, 100),
-      lastAnnouncement: `View revision ${current.viewRevision} saved to the local case ledger.`,
+      lastAnnouncement: `View version ${current.viewRevision} saved to this decision's history.`,
     };
   }, { type: "presentation.saved", receipt });
   persistCaseSessionState();

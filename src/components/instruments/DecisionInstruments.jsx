@@ -52,10 +52,10 @@ export function ProtectedInvariantsInstrument({ snapshot, instrument, onAction }
   return (
     <InstrumentFrame
       instrument={instrument}
-      kicker="Decision Firewall"
-      title="Protected invariants"
+      kicker="Required checks"
+      title="Rules that cannot be bypassed"
       status={status}
-      description="The composition compiler cannot remove or rewrite these constraints."
+      description="Neither a person nor an agent can hide or rewrite these checks from this view."
     >
       <ul className="protected-invariant-list">
         {constraints.map(({ item, reference }) => {
@@ -78,9 +78,9 @@ export function ProtectedInvariantsInstrument({ snapshot, instrument, onAction }
           ))}
       </ul>
       <dl className="authority-ledger">
-        <div><dt>Authority</dt><dd>{authority?.mode || snapshot.contract?.authority || "Not declared"}</dd></div>
-        <div><dt>Approval tool</dt><dd>{authority?.canApprove ? "Available to an authorized human" : "Not available to agents"}</dd></div>
-        <div><dt>Prohibited entity kinds</dt><dd>{prohibited.length ? prohibited.join(", ") : "None declared"}</dd></div>
+        <div><dt>Who decides</dt><dd>{authority?.mode || snapshot.contract?.authority || "Not specified"}</dd></div>
+        <div><dt>Who can approve</dt><dd>{authority?.canApprove ? "An authorized person" : "People only"}</dd></div>
+        <div><dt>Information that cannot be used</dt><dd>{prohibited.length ? prohibited.join(", ") : "None specified"}</dd></div>
       </dl>
       {unresolved.length ? (
         <div className="unresolved-reference-warning" role="alert">
@@ -92,7 +92,7 @@ export function ProtectedInvariantsInstrument({ snapshot, instrument, onAction }
   );
 }
 
-export function ConstraintGateInstrument({ snapshot, instrument, onAction, title = "Constraint gates" }) {
+export function ConstraintGateInstrument({ snapshot, instrument, onAction, title = "Required checks" }) {
   const referenced = referencedItems(snapshot, instrument, ["constraint", "requirement", "criterion"]);
   const fallback = itemsByKinds(snapshot, ["constraint", "requirement", "criterion"], getLimit(instrument)).map((item) => ({
     item,
@@ -100,7 +100,7 @@ export function ConstraintGateInstrument({ snapshot, instrument, onAction, title
   }));
   const constraints = firstNonEmpty(referenced, fallback).slice(0, getLimit(instrument));
   return (
-    <InstrumentFrame instrument={instrument} kicker="Declared policy" title={title} status={constraints.some(({ item }) => normalizeStatus(matchingResult(snapshot, item, instrument)?.status ?? item.status) === "fail") ? "fail" : "neutral"}>
+    <InstrumentFrame instrument={instrument} kicker="Decision rules" title={title} status={constraints.some(({ item }) => normalizeStatus(matchingResult(snapshot, item, instrument)?.status ?? item.status) === "fail") ? "fail" : "neutral"}>
       {constraints.length ? (
         <ol className="constraint-gate-list">
           {constraints.map(({ item, reference }) => {
@@ -119,7 +119,7 @@ export function ConstraintGateInstrument({ snapshot, instrument, onAction, title
           })}
         </ol>
       ) : (
-        <EmptyInstrumentState>No declared constraints are available for evaluation.</EmptyInstrumentState>
+        <EmptyInstrumentState>No required checks have been added.</EmptyInstrumentState>
       )}
     </InstrumentFrame>
   );
@@ -147,12 +147,12 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
   const summary = scenarioChange
     ? `${scenarioChange.alternativeLabel} · ${scenarioChange.criterionLabel}: ${scenarioChange.baselineFormattedValue} to ${scenarioChange.scenarioFormattedValue}.${scenario.changes.length > 1 ? ` ${scenario.changes.length - 1} additional scenario ${scenario.changes.length === 2 ? "input is" : "inputs are"} included in this branch.` : ""}`
     : hypothetical
-      ? "Run a scenario to calculate this branch without changing the canonical decision."
+      ? "Run a scenario without changing the saved decision."
       : result?.reason || alternative?.summary || "The available evidence does not support a final outcome.";
   return (
     <InstrumentFrame
       instrument={instrument}
-      kicker={hypothetical ? "Projected outcome · scenario only" : "Canonical outcome"}
+      kicker={hypothetical ? "Possible result · scenario only" : "Current result"}
       title={title}
       status={status}
       className="outcome-seal-instrument"
@@ -166,7 +166,7 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
             {scenarioChange ? (
               <>
                 <div>
-                  <dt>Canonical</dt>
+                  <dt>Current value</dt>
                   <dd><strong>{scenarioChange.baselineFormattedValue}</strong><em className={`status-${normalizeStatus(scenarioChange.baselineStatus)}`}>{scenarioChange.baselineStatus}</em></dd>
                 </div>
                 <div>
@@ -177,7 +177,7 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
             ) : null}
             {scenarioConstraint ? (
               <div className="scenario-branch-ledger__wide">
-                <dt>{scenarioConstraint.label} · mandatory gate</dt>
+                <dt>{scenarioConstraint.label} · required check</dt>
                 <dd>
                   <strong>{operatorSymbol(scenarioConstraint.operator)} {scenarioConstraint.expectedFormattedValue}</strong>
                   <em className={`status-${normalizeStatus(scenarioConstraint.scenarioStatus)}`}>{scenarioConstraint.scenarioStatus}</em>
@@ -208,19 +208,19 @@ export function OutcomeSealInstrument({ snapshot, instrument }) {
               </div>
             ) : null}
             <div>
-              <dt>Mandatory blockers</dt>
+              <dt>Blocking problems</dt>
               <dd><strong>{scenario.baseBlockerCount} → {scenario.blockerCount}</strong></dd>
             </div>
             <div>
-              <dt>Canonical record</dt>
-              <dd><strong>{scenario.originalDecisionUnchanged ? `Revision ${snapshot.decisionRevision} unchanged` : "Review required"}</strong></dd>
+              <dt>Saved decision</dt>
+              <dd><strong>{scenario.originalDecisionUnchanged ? `Version ${snapshot.decisionRevision} unchanged` : "Review required"}</strong></dd>
             </div>
           </dl>
         ) : result?.value !== undefined && !hypothetical ? <output>{formatCanonicalValue(result.value, result.unit, snapshot.metadata?.locale)}</output> : null}
       </div>
       <p className="outcome-authority-note">
         <IconLock size={17} aria-hidden="true" />
-        {hypothetical ? "The canonical decision remains unchanged." : "Human authority remains required for consequential action."}
+        {hypothetical ? "The saved decision remains unchanged." : "A person must approve any consequential action."}
       </p>
     </InstrumentFrame>
   );
@@ -231,7 +231,7 @@ export function StakeholderMandateInstrument({ snapshot, instrument }) {
   const fallback = itemsByKinds(snapshot, ["stakeholder", "actor", "reviewer"], getLimit(instrument)).map((item) => ({ item }));
   const stakeholders = firstNonEmpty(referenced, fallback).slice(0, getLimit(instrument));
   return (
-    <InstrumentFrame instrument={instrument} kicker="Affected and accountable people" title="Stakeholder mandates">
+    <InstrumentFrame instrument={instrument} kicker="People involved" title="What each person needs">
       {stakeholders.length ? (
         <ol className="stakeholder-mandate-list">
           {stakeholders.map(({ item }, index) => (
@@ -283,7 +283,7 @@ export function DecisionBriefInstrument({ snapshot, instrument, onAction }) {
 export function BiasShieldInstrument({ snapshot, instrument }) {
   const prohibited = snapshot.protected?.prohibitedEntityKinds ?? [];
   return (
-    <InstrumentFrame instrument={instrument} kicker="Governance boundary" title="Bias and authority shield" status={prohibited.length ? "warning" : "neutral"}>
+    <InstrumentFrame instrument={instrument} kicker="Fairness rules" title="Protected information and human control" status={prohibited.length ? "warning" : "neutral"}>
       <div className="bias-shield-copy">
         <IconShieldLock size={26} aria-hidden="true" />
         <div>
@@ -297,5 +297,5 @@ export function BiasShieldInstrument({ snapshot, instrument }) {
 }
 
 export function ComplianceGateWallInstrument(props) {
-  return <ConstraintGateInstrument {...props} title="Compliance gate wall" />;
+  return <ConstraintGateInstrument {...props} title="Compliance checks" />;
 }

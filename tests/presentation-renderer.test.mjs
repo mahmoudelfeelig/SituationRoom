@@ -83,7 +83,7 @@ test("the compiled renderer covers every layout grammar, escapes evidence, and e
       assert.equal(compiled.ok, true, compiled.errors?.join("\n"));
       const html = renderToStaticMarkup(React.createElement(CompiledRoomView, { snapshot, plan: compiled.plan }));
       assert.match(html, new RegExp(`data-layout-pattern="${pattern}"`));
-      assert.match(html, /Decision hash decision-generic-8 unchanged/);
+      assert.match(html, /Decision fingerprint unchanged/);
       assert.doesNotMatch(html, /<script>/);
       if (lens === "investigate") assert.match(html, /&lt;script&gt;alert/);
       if (lens === "compare") assert.match(html, /<table class="compiled-comparison-table/);
@@ -150,7 +150,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
         plan: awaitingPlan.plan,
       }));
       assert.match(awaitingHtml, /Awaiting scenario/);
-      assert.match(awaitingHtml, /Run a scenario to calculate this branch/);
+      assert.match(awaitingHtml, /Run a scenario without changing the saved decision/);
 
       const scenarioResult = evaluateScenario(decisionCase, "procurement-scenario:deployment-delay", procurementPack);
       const scenarioSnapshot = toPresentationSnapshot(decisionCase, evaluation, {
@@ -174,7 +174,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
         snapshot: scenarioSnapshot,
         plan: scenarioPlan.plan,
       }));
-      assert.equal((scenarioHtml.match(/Projected outcome · scenario only/g) ?? []).length, 1);
+      assert.equal((scenarioHtml.match(/Possible result · scenario only/g) ?? []).length, 1);
       assert.match(scenarioHtml, /No eligible alternative/);
       assert.match(scenarioHtml, /10 weeks/);
       assert.match(scenarioHtml, /13 weeks/);
@@ -182,7 +182,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
       assert.match(scenarioHtml, /Top-ranked but blocked/);
       assert.match(scenarioHtml, /Northstar Relay/);
       assert.match(scenarioHtml, /Score 71/);
-      assert.match(scenarioHtml, /Revision 17 unchanged/);
+      assert.match(scenarioHtml, /Version 17 unchanged/);
 
       const genericCase = createGenericFixture();
       const genericEvaluation = evaluateWithDomainPack(genericCase, genericPack);

@@ -24,9 +24,9 @@ const LENS_ICONS = {
 };
 
 const WORKFLOW_ROUTES = Object.freeze([
-  { workspace: "model", label: "Model", note: "Contract", icon: IconFileDescription },
-  { workspace: "review", label: "Review", note: "People", icon: IconMessage2 },
-  { workspace: "outputs", label: "Outputs", note: "Packets", icon: IconArchive },
+  { workspace: "model", label: "Set up decision", note: "Question and rules", icon: IconFileDescription },
+  { workspace: "review", label: "Review requests", note: "For people", icon: IconMessage2 },
+  { workspace: "outputs", label: "Export", note: "Files", icon: IconArchive },
 ]);
 
 function routeForCase(route, caseId, fallbackLens) {
@@ -50,10 +50,10 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
   }
 
   return (
-    <aside className={`os-spine ${mobileOpen ? "is-open" : ""}`} id="workspace-navigation" aria-label="Case file navigation">
+    <aside className={`os-spine ${mobileOpen ? "is-open" : ""}`} id="workspace-navigation" aria-label="Decision navigation">
       <div className="os-spine-mobile-header">
-        <div><span className="os-eyebrow">Case file</span><strong>Room map</strong></div>
-        <button type="button" onClick={onClose} aria-label="Close room map"><IconX size={20} /></button>
+        <div><span className="os-eyebrow">Current decision</span><strong>Navigate</strong></div>
+        <button type="button" onClick={onClose} aria-label="Close navigation"><IconX size={20} /></button>
       </div>
 
       <div className="os-case-switcher">
@@ -63,7 +63,7 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
         <details>
           <summary>
             <span className={`os-case-mark accent-${domain.accent}`} aria-hidden="true">{domain.label.slice(0, 1)}</span>
-            <span><small>Active docket</small><strong>{room.activeCase.title}</strong></span>
+            <span><small>Current decision</small><strong>{room.activeCase.title}</strong></span>
             <IconChevronDown size={18} aria-hidden="true" />
           </summary>
           <div className="os-case-tabs" aria-label="Switch active decision">
@@ -91,8 +91,8 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
         </details>
       </div>
 
-      <nav className="os-route-nav" aria-label="Decision views">
-        <span className="os-spine__label"><IconRoute size={16} /><span>Decision views</span></span>
+      <nav className="os-route-nav" aria-label="Analysis views">
+        <span className="os-spine__label"><IconRoute size={16} /><span>Understand the decision</span></span>
         <div className="os-lens-tabs">
           {Object.values(LENS_CONFIG).map((lens) => {
             const Icon = LENS_ICONS[lens.id];
@@ -113,8 +113,8 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
         </div>
       </nav>
 
-      <nav className="os-route-nav os-route-nav--workflow" aria-label="Case workflow">
-        <span className="os-spine__label"><IconFileDescription size={16} /><span>Case workflow</span></span>
+      <nav className="os-route-nav os-route-nav--workflow" aria-label="Decision workflow">
+        <span className="os-spine__label"><IconFileDescription size={16} /><span>Manage the decision</span></span>
         <div className="os-workflow-tabs">
           {WORKFLOW_ROUTES.map((page) => {
             const Icon = page.icon;
@@ -149,7 +149,7 @@ export function WorkspaceSpine({ room, route, navigate, mobileOpen, onClose }) {
           <IconArchive size={18} /><span>Sources</span><strong>{room.snapshot?.sources?.length ?? 0}</strong>
         </button>
         <button type="button" className="os-spine-action" onClick={() => { if (mobileOpen) onClose?.(); toggleAudit(true); }}>
-          <IconHistory size={18} /><span>Ledger</span><strong>{room.receipts.length}</strong>
+          <IconHistory size={18} /><span>Activity</span><strong>{room.receipts.length}</strong>
         </button>
       </div>
     </aside>

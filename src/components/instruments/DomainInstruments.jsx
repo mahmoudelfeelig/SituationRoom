@@ -6,11 +6,11 @@ import { MissingEvidenceInstrument } from "./EvidenceInstruments.jsx";
 import { firstNonEmpty, getLimit, itemsByKinds, referencedItems, summaryFor, titleFor } from "./shared.js";
 
 export function VendorLanesInstrument(props) {
-  return <ComparisonMatrixInstrument {...props} title="Vendor requirement lanes" />;
+  return <ComparisonMatrixInstrument {...props} title="Requirements by vendor" />;
 }
 
 export function TotalCostWaterfallInstrument(props) {
-  return <MetricWaterfallInstrument {...props} title="Total-cost waterfall" />;
+  return <MetricWaterfallInstrument {...props} title="Costs by option" />;
 }
 
 export function CandidateRequirementCoverageInstrument(props) {
