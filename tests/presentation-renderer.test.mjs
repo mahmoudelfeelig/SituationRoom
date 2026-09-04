@@ -180,7 +180,7 @@ test("scenario instruments expose declared controls and truthful hypothetical re
       assert.match(scenarioHtml, /13 weeks/);
       assert.match(scenarioHtml, /≤ 12 weeks/);
       assert.match(scenarioHtml, /Highest score, but requirements are not met/);
-      assert.match(scenarioHtml, /Northstar Relay/);
+      assert.match(scenarioHtml, /Northstar Communications/);
       assert.match(scenarioHtml, /Score 71/);
       assert.match(scenarioHtml, /Version 17 unchanged/);
 

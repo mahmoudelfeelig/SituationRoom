@@ -319,7 +319,7 @@ test("all four room grammars recompose without changing the canonical decision",
       await expect(branch.getByText("13 weeks", { exact: true })).toBeVisible();
       await expect(branch.getByText("≤ 12 weeks", { exact: true })).toBeVisible();
       await expect(branch).toContainText("Highest score, but requirements are not met");
-      await expect(branch).toContainText("Northstar Relay");
+      await expect(branch).toContainText("Northstar Communications");
       await expect(branch).toContainText(`Version ${before.decisionRevision} unchanged`);
     }
     const current = await roomState(page);

@@ -275,6 +275,7 @@ test("the real page owns WebMCP discovery, governed phase changes, view-only com
   await expect(page.locator(".os-header-ledger")).toContainText(`v${afterCompose.viewRevision}`);
   await expect(page.locator(".os-agent-wire")).toBeVisible();
   await expect(page.getByRole("list", { name: "Recent agent activity" })).toContainText("compose decision room");
+  await expect(page.getByRole("list", { name: "Recent agent activity" })).not.toContainText(/\b(kernel|packets?|relays?)\b/i);
   const liveActivity = await page.evaluate(() => window.__situationRoom.getState().agentActivity);
   expect(liveActivity.lastDiff).toMatchObject({ decisionChanged: false, viewChanged: true });
   expect(liveActivity.steps.at(-1).argumentKeys).toEqual(expect.arrayContaining([

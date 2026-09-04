@@ -685,7 +685,7 @@ export function createToolCatalog({
   });
 
   const outputTools = [
-    ["preview_decision_packet", "previewDecisionPacket", false, "Preview a cited decision packet without downloading, publishing, or changing the case."],
+    ["preview_decision_packet", "previewDecisionPacket", false, "Preview a cited decision report without downloading, publishing, or changing the case."],
     ["export_case", "exportCase", true, "Prepare a visible local export of the current case revision. It cannot publish or send the export externally."],
     ["draft_request", "draftRequest", true, "Draft a source-linked request for information or review. It cannot send the request."],
     ["prepare_external_action", "prepareExternalAction", true, "Prepare a visible external-action draft for human review. It cannot submit, approve, or execute the action."],

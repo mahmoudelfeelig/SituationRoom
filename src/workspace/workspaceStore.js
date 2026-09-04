@@ -1659,7 +1659,7 @@ async function prepareCaseExportNow(format = "json", options = {}) {
     ...current,
     outputArtifacts: nextArtifacts,
     receipts: [receipt, ...current.receipts].slice(0, 100),
-    lastAnnouncement: `${format.toUpperCase()} decision packet prepared at revision ${artifact.decisionRevision}; download still requires a person.`,
+    lastAnnouncement: `${format.toUpperCase()} decision report prepared at revision ${artifact.decisionRevision}; download still requires a person.`,
   }), { type: "output.prepared", artifact: { ...artifact, bytes: undefined, text: undefined }, receipt });
   persistCaseSessionState(artifact.caseId);
   const storageFailures = [];

@@ -13,7 +13,7 @@ The visual concept is a Living Caseboard: an asymmetric editorial evidence desk 
 
 ## What the release includes
 
-- One typed decision kernel shared by procurement, candidate review, consumer health-plan comparison, and general choice domains.
+- One shared typed decision model for procurement, candidate review, consumer health-plan comparison, and general choice domains.
 - Domain-permitted deterministic analysis: scoring, eligibility, and constraint gates where allowed; requirement-evidence analysis for candidate review; and source-backed claims, causal paths, uncertainty, conflicts, scenarios, revisions, idempotency, and audit receipts.
 - Four genuinely structural view grammars and 34 allowlisted decision instruments. Agents select semantic instruments and canonical IDs; they cannot inject HTML, CSS, code, formulas, colors, facts, or authority.
 - A truthful browser-agent channel that shows only tool calls the page actually receives, remains accurate during overlapping executions, and separates canonical changes from presentation-only recomposition through receipt-backed deltas.
@@ -33,7 +33,7 @@ The Living Caseboard is distributed across focused, deep-linkable workspaces ins
 - `/cases/:caseId/model` contains the decision contract and typed model.
 - `/cases/:caseId/analyze/:lens` contains exactly one of Investigate, Compare, Simulate, or Brief.
 - `/cases/:caseId/review` contains human checkpoints and attributed collaboration.
-- `/cases/:caseId/outputs` contains packet preview and preparation.
+- `/cases/:caseId/outputs` contains report preview and preparation.
 
 The URL is a projection of authoritative workspace state. Back, Forward, reload, and copied deep links restore the active case and surface; pending review, frozen authority, or import recovery may normalize a requested URL to the only permitted workspace. The desktop shell uses one document scroll and a compact case-file rail. Narrow screens replace that rail with a focus-managed room-map drawer rather than stacking every navigation and governance surface above the decision.
 
@@ -47,7 +47,7 @@ Normalized table cells, structured fields, workbook ranges, and conservative key
 
 Legacy Office files, OpenDocument files, MSG, HEIC, and Parquet are recognized but deliberately return a visible unsupported-format diagnostic because no safe native parser is bundled. Password-protected sources must be explicitly decrypted before import. Image OCR uses the bundled English language data.
 
-Decision packets can be prepared locally as JSON, JSON-LD, CSV, HTML, XLSX, DOCX, or print-ready HTML for browser PDF printing. The latest 20 artifacts per case are retained; evicted blobs are deleted and any retention-cleanup failure becomes a visible session-only warning that requires a workspace reset. Candidate-review packets are requirement-evidence-only: they contain no eligibility, score, rank, blocker, recommendation, or employment outcome. WebMCP can prepare an artifact, but a person must still download, print, publish, or send it.
+Decision reports can be prepared locally as JSON, JSON-LD, CSV, HTML, XLSX, DOCX, or print-ready HTML for browser PDF printing. The latest 20 artifacts per case are retained; evicted blobs are deleted and any retention-cleanup failure becomes a visible session-only warning that requires a workspace reset. Candidate-review reports are requirement-evidence-only: they contain no eligibility, score, rank, blocker, recommendation, or employment outcome. WebMCP can prepare an artifact, but a person must still download, print, publish, or send it.
 
 ## Governed WebMCP
 

@@ -10,7 +10,12 @@ import {
 import { selectAgentActivityForCase } from "../../workspace/agentActivity.js";
 
 function humanize(value) {
-  return String(value ?? "").replaceAll(/[-_]/g, " ");
+  return String(value ?? "")
+    .replaceAll(/[-_]/g, " ")
+    .replaceAll(/\bkernel\b/gi, "decision data")
+    .replaceAll(/\bpackets\b/gi, "reports")
+    .replaceAll(/\bpacket\b/gi, "report")
+    .replaceAll(/\brelays?\b/gi, "communications");
 }
 
 function statusCopy(status) {

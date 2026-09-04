@@ -527,7 +527,7 @@ export function createCandidateReviewFixture() {
     criteria.map((criterion, index) => ({
       key: `${candidate.id}:${criterion.id}`,
       document: `${candidate.label} reviewed evidence`,
-      text: `${criterion.label}: ${String(candidate.values[index])}. Recorded from the reviewed application packet.`,
+      text: `${criterion.label}: ${String(candidate.values[index])}. Recorded from the reviewed application file.`,
       locator: { section: criterion.id },
     })),
   );

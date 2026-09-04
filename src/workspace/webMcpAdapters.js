@@ -310,7 +310,7 @@ function proposalReason(type) {
     "decision.proposeRule": "Rules remain proposals until a person confirms their metric semantics and trusted operator mapping.",
     "collaboration.addAgentComment": "Agent comments are non-canonical collaboration artifacts and cannot resolve evidence or speak for a human.",
   };
-  return reasons[type] ?? "The current kernel cannot commit this proposal without inventing decision semantics.";
+  return reasons[type] ?? "The current decision system cannot commit this proposal without inventing decision rules.";
 }
 
 function stageCommand({ store, type, command, current, actor, idempotencyKey, reason }) {
@@ -500,7 +500,7 @@ function mapDottedCommand(command, current, options, reviewArtifacts) {
 
   if (type === "decision.flagConflict") {
     if (payload.leftRef?.kind !== "claim" || payload.rightRef?.kind !== "claim") {
-      return { stagedResult: stage("Only claim-to-claim conflicts can be committed by the current canonical kernel.") };
+      return { stagedResult: stage("Only claim-to-claim conflicts can be committed by the current decision system.") };
     }
     if (payload.leftRef.id === payload.rightRef.id) {
       throw adapterError("VALIDATION_FAILED", "A claim cannot conflict with itself.");
@@ -519,7 +519,7 @@ function mapDottedCommand(command, current, options, reviewArtifacts) {
 
   if (type === "decision.createBranch") {
     if (payload.fromRevision !== current.revision) {
-      return { stagedResult: stage("The current kernel can create a live branch only from the current canonical revision.") };
+      return { stagedResult: stage("The current decision system can create a live branch only from the current saved revision.") };
     }
     return {
       kernelCommand: {
@@ -603,7 +603,7 @@ function graphPage(decisionCase, evaluation, query) {
     truncated: page.nextCursor !== null,
     nextCursor: page.nextCursor,
     warnings: query.relationTypes?.length
-      ? [{ code: "RELATION_FILTER_UNSUPPORTED", message: "The canonical kernel currently filters causal paths, not arbitrary relation labels." }]
+      ? [{ code: "RELATION_FILTER_UNSUPPORTED", message: "The decision system currently filters causal paths, not arbitrary relationship labels." }]
       : [],
   };
 }

@@ -174,7 +174,7 @@ test("saved scenarios run without inline overrides and may be refined transientl
   assert.deepEqual(savedOnly.appliedOverrides, []);
   assert.deepEqual(savedOnly.evaluation.results[0], {
     alternativeId: "vendor-a",
-    label: "Northstar Relay",
+    label: "Northstar Communications",
     eligible: false,
     score: 71,
     blockers: ["r3"],

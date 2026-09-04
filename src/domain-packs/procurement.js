@@ -183,7 +183,7 @@ export function createProcurementFixture() {
         revision: CASE_INFO.canonicalRevision,
         at: CASE_INFO.updatedAt,
         actor: { type: "system", id: "legacy-migration" },
-        action: "Migrated the procurement prototype into the universal decision kernel.",
+        action: "Migrated the procurement prototype into the shared decision system.",
       },
     ],
   });

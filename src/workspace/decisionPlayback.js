@@ -9,6 +9,10 @@ function boundedText(value, fallback = "") {
 function humanize(value) {
   return boundedText(value, "workspace event")
     .replaceAll(/[._-]+/g, " ")
+    .replaceAll(/\bkernel\b/gi, "decision data")
+    .replaceAll(/\bpackets\b/gi, "reports")
+    .replaceAll(/\bpacket\b/gi, "report")
+    .replaceAll(/\brelays?\b/gi, "communications")
     .replaceAll(/\s+/g, " ")
     .trim();
 }
