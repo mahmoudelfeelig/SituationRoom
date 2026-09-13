@@ -34,6 +34,6 @@ When implementing from a selected generated mock, treat that image as the source
 - Use plain, familiar product language in every user-facing surface. Internal terms such as ledger, docket, canonical, invariant, receipt, compiler, arm capture, and packet press belong only in explicitly opened technical details.
 - Prefer "communications," "decision report," and "decision system" in user-facing copy; keep "relay," "packet," and "kernel" limited to genuinely technical internal names when they cannot be removed safely.
 - Keep the primary decision route focused on the current task: a compact result summary and the main evidence view. Put supporting calculations, technical records, saved-view history, and evaluation tooling behind progressive disclosure or remove them from the end-user UI.
-- Use Mahmoud Elfeel's mauve elephant mark as the restrained cross-site brand signature in the masthead and browser icon. Do not repeat it decoratively throughout the workspace.
+- Use Mahmoud Elfeel's Red 3 elephant mark from the approved Kas logo set as the restrained brand signature in the masthead and browser icon. Do not recolor it or introduce additional variants.
 
 Build app UI in `src/`. Keep `.openai/hosting.json`, `worker/index.js`, `scripts/prepare-sites-build.mjs`, and `tests/sites-worker.test.mjs` intact so the same local prototype can be handed to Sites. Before a Sites handoff, run `npm run build` and `npm run test:sites`; the build must leave `dist/client/index.html`, `dist/server/index.js`, and `dist/.openai/hosting.json`.
